@@ -1,16 +1,5 @@
-module JFVM
-
-using PyPlot
-using PyCall
-# I prefer not to use the following command for the issues that it has on windows machines
-# pygui_start(:wx)
-mayavis=0
-try
-  @pyimport mayavi.mlab as m
-  mayavis=m
-catch
-  warn("Mayavi is not installed or could not be imported.")
-end
+__precompile__()
+module JFVMM
 
 import Base: +, -, *, /, .*, ./
 export MeshStructure, BoundaryCondition, CellValue, FaceValue, CellVector,
@@ -21,17 +10,21 @@ export MeshStructure, BoundaryCondition, CellValue, FaceValue, CellVector,
        createFaceVariable, copyCell, fluxLimiter, createMesh1D,
        createMesh2D, createMesh3D, createMeshRadial2D, createMeshCylindrical2D,
        createMeshCylindrical3D, createMeshCylindrical1D, solveLinearPDE,
-       visualizeCells, linearSourceTerm, constantSourceTerm, transientTerm,
+       linearSourceTerm, constantSourceTerm, transientTerm,
        solveMUMPSLinearPDE, faceEval, cellEval, permfieldlogrndg, permfieldlogrnde,
-       plot, imshow, xlabel, ylabel, figure, legend, pcolor, contour, colorbar,
-       visualizeCellVectors, JFVM_test, solveExplicitPDE, reshapeCell,
+       # plot, imshow, xlabel, ylabel, figure, legend, pcolor, contour, colorbar,
+       JFVM_test, solveExplicitPDE, reshapeCell,
        cellVolume, reshapeInternalCell, internalCells, domainInt, convectionTvdRHS
 
-include("fvmToolTypes.jl")
-include("meshstructure.jl")
-include("boundarycondition.jl")
-include("domainVariables.jl")
-include("diffusionterms.jl")
+# Ignore visualization for now
+# visualizeCellVectors
+# visualizeCells
+
+include("jfvmm_1types.jl")
+include("jfvmm_2meshstructure.jl")
+include("jfvmm_3boundarycondition.jl")
+include("jfvmm_4domain_variables.jl")
+include("jfvmm_5diffusion_terms.jl")
 include("transientTerms.jl")
 include("domainOperators.jl")
 include("convectionTerms.jl")

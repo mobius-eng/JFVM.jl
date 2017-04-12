@@ -1,21 +1,29 @@
+"""
+"""
 type CellLocation{T<:Real}
   x::Array{T,1}
   y::Array{T,1}
   z::Array{T,1}
 end
 
+"""
+"""
 type CellSize{T<:Real}
   x::Array{T,1}
   y::Array{T,1}
   z::Array{T,1}
 end
 
+"""
+"""
 type FaceLocation{T<:Real}
   x::Array{T,1}
   y::Array{T,1}
   z::Array{T,1}
 end
 
+"""
+"""
 type MeshStructure
   dimension::Real
   dims::Array{Int,1}
@@ -26,11 +34,15 @@ type MeshStructure
   edge::Array{Int,1}
 end
 
+"""
+"""
 type CellValue{T<:Real}
   domain::MeshStructure
   value::Array{T}
 end
 
+"""
+"""
 type CellVector{T<:Real}
   domain::MeshStructure
   xvalue::Array{T}
@@ -38,6 +50,8 @@ type CellVector{T<:Real}
   zvalue::Array{T}
 end
 
+"""
+"""
 type FaceValue{T<:Real}
   domain::MeshStructure
   xvalue::Array{T}
@@ -45,6 +59,8 @@ type FaceValue{T<:Real}
   zvalue::Array{T}
 end
 
+"""
+"""
 type BorderValue{T<:Real}
   a::Array{T}
   b::Array{T}
@@ -52,6 +68,8 @@ type BorderValue{T<:Real}
   periodic::Bool
 end
 
+"""
+"""
 type BoundaryCondition
   domain::MeshStructure
   left::BorderValue

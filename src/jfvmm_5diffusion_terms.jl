@@ -10,25 +10,27 @@
 #    2015-01-10 extended to accept nonuniform grids
 # ================================================================
 
-# ========================= DIFFUSION TERM ================================
+# %% ======================= DIFFUSION TERM ================================
+"""
+"""
 function diffusionTerm(D::FaceValue)
-d = D.domain.dimension
-if d==1
-  M = diffusionTerm1D(D)
-elseif d==1.5
-  M = diffusionTermCylindrical1D(D)
-elseif d==2
-  M, Mx, My = diffusionTerm2D(D)
-elseif d==2.5
-  M, Mx, My = diffusionTermCylindrical2D(D)
-elseif d==2.8
-  M, Mx, My = diffusionTermRadial2D(D)
-elseif d==3
-  M, Mx, My, Mz = diffusionTerm3D(D)
-elseif d==3.2
-  M, Mx, My, Mz = diffusionTermCylindrical3D(D)
-end
-M
+    d = D.domain.dimension
+    if d==1
+      M = diffusionTerm1D(D)
+    elseif d==1.5
+      M = diffusionTermCylindrical1D(D)
+    elseif d==2
+      M, Mx, My = diffusionTerm2D(D)
+    elseif d==2.5
+      M, Mx, My = diffusionTermCylindrical2D(D)
+    elseif d==2.8
+      M, Mx, My = diffusionTermRadial2D(D)
+    elseif d==3
+      M, Mx, My, Mz = diffusionTerm3D(D)
+    elseif d==3.2
+      M, Mx, My, Mz = diffusionTermCylindrical3D(D)
+    end
+    M
 end
 
 # ======================== 1D CARTESIAN DIFFUSION =========================
