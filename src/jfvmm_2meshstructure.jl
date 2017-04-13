@@ -25,19 +25,13 @@ Lx=1.0
 m=createMesh1D(Nx, Lx)
 """
 function createMesh1D(Nx::Int, Width::Real)
-    # builds a uniform 1D mesh:
-    # Nx is the number of cells in x (horizontal) direction
-    # Width is the domain length in x direction
-
-    # mesh dimension
-
     # cell size is dx
     dx = Width/Nx
 
     # numbering system of cells, like the single index numbering of Matlab
     # +2 is added to account for the ghost cells that are added at
     # the boundaries
-    MeshStructure(1,
+    MeshStructure(mesh1D,
     		[Nx],
     		CellSize(dx*ones(Nx+2), [0.0], [0.0]),
     		CellLocation([1:Nx;]*dx.-dx/2,[0.0],[0.0]),
@@ -65,15 +59,11 @@ Usage:
 	m=createMesh1D(x)
 """
 function createMesh1D{T<:Real}(facelocationX::Array{T,1})
-    # builds a uniform 1D mesh:
-    # facelocationX is the location of each cell face
-    # mesh dimension
-    # cell size is dx
     Nx = length(facelocationX)-1
     # numbering system of cells, like the single index numbering of Matlab
     # +2 is added to account for the ghost cells that are added at
     # the boundaries
-    MeshStructure(1,
+    MeshStructure(mesh1D,
     		[Nx],
     		CellSize(
                 [
@@ -111,22 +101,18 @@ R=1.0
 m=createMesh1D(Nr, R)
 """
 function createMeshCylindrical1D(Nr::Int, Radius::Real)
-# builds a uniform 1D cylindrical mesh:
-# Nx is the number of cells in r (radial) direction
-# Radius is the domain length in r direction
-# mesh dimension
-# cell size is dr
-dr = Radius/Nr
-# numbering system of cells, like the single index numbering of Matlab
-# +2 is added to account for the ghost cells that are added at
-# the boundaries
-MeshStructure(1.5,
-		[Nr],
-		CellSize(dr*ones(Nr+2), [0.0], [0.0]),
-		CellLocation([1:Nr;]*dr.-dr/2.0,[0.0],[0.0]),
-		FaceLocation([0:Nr;]*dr,[0.0],[0.0]),
-		[1],
-		[1])
+    # cell size is dr
+    dr = Radius/Nr
+    # numbering system of cells, like the single index numbering of Matlab
+    # +2 is added to account for the ghost cells that are added at
+    # the boundaries
+    MeshStructure(mesh1DPolar,
+    		[Nr],
+    		CellSize(dr*ones(Nr+2), [0.0], [0.0]),
+    		CellLocation([1:Nr;]*dr.-dr/2.0,[0.0],[0.0]),
+    		FaceLocation([0:Nr;]*dr,[0.0],[0.0]),
+    		[1],
+    		[1])
 end
 
 """
@@ -148,16 +134,11 @@ Usage:
 	m=createMeshCylindrical1D(r)
 """
 function createMeshCylindrical1D{T<:Real}(facelocationR::Array{T,1})
-    # builds a uniform 1D cylindrical mesh:
-    # Nx is the number of cells in r (radial) direction
-    # Radius is the domain length in r direction
-    # mesh dimension
-    # cell size is dr
     Nr = length(facelocationR)-1
     # numbering system of cells, like the single index numbering of Matlab
     # +2 is added to account for the ghost cells that are added at
     # the boundaries
-    MeshStructure(1.5,
+    MeshStructure(mesh1DPolar,
     		[Nr],
     		CellSize(
                 [
@@ -198,10 +179,6 @@ Ly=2.5
 m=createMesh2D(Nx, Ny, Lx, Ly)
 """
 function createMesh2D(Nx::Int, Ny::Int, Width::Real, Height::Real)
-    # builds a uniform 2D mesh:
-    # Nx is the number of cells in x (horizontal) direction
-    # Width is the domain length in x direction
-
     # numbering system of cells, like the single index numbering of Matlab
     # +2 is added to account for the ghost cells that are added at
     # the boundaries
@@ -209,7 +186,7 @@ function createMesh2D(Nx::Int, Ny::Int, Width::Real, Height::Real)
     dx = Width/Nx
     dy = Height/Ny
     G=reshape([1:(Nx+2)*(Ny+2);], Nx+2, Ny+2)
-    MeshStructure(2,
+    MeshStructure(mesh2D,
     	[Nx, Ny],
     	CellSize(dx*ones(Nx+2), dy*ones(Ny+2), [0.0]),
     	CellLocation([1:Nx;]*dx.-dx/2.0,[1:Ny;]*dy.-dy/2.0,[0.0]),
@@ -243,7 +220,7 @@ function createMesh2D{T<:Real}(facelocationX::Array{T,1}, facelocationY::Array{T
     Nx = length(facelocationX)-1
     Ny = length(facelocationY)-1
     G=reshape([1:(Nx+2)*(Ny+2);], Nx+2, Ny+2)
-    MeshStructure(2,
+    MeshStructure(mesh2D,
     	[Nx, Ny],
     	CellSize(
             [
@@ -296,7 +273,7 @@ function createMeshRadial2D(Nr::Int, Ntheta::Int, Radius::Real, Angle::Real)
     dr = Radius/Nr
     dtheta = Angle/Ntheta
     G=reshape([1:(Nr+2)*(Ntheta+2);], Nr+2, Ntheta+2)
-    MeshStructure(2.8,
+    MeshStructure(mesh2DPolar,
     	[Nr, Ntheta],
     	CellSize(dr*ones(Nr+2), dtheta*ones(Ntheta+2), [0.0]),
     	CellLocation(
@@ -338,7 +315,7 @@ function createMeshRadial2D{T<:Real}(facelocationR::Array{T,1}, facelocationThet
     Nx = length(facelocationR)-1
     Ny = length(facelocationTheta)-1
     G=reshape([1:(Nx+2)*(Ny+2);], Nx+2, Ny+2)
-    MeshStructure(2.8,
+    MeshStructure(mesh2DPolar,
     	[Nx, Ny],
     	CellSize(
             [
@@ -385,7 +362,7 @@ function createMeshCylindrical2D(Nr::Int, Nz::Int, Radius::Real, Height::Real)
     dr = Radius/Nr
     dz = Height/Nz
     G=reshape([1:(Nr+2)*(Nz+2);], Nr+2, Nz+2)
-    MeshStructure(2.5,
+    MeshStructure(mesh2DCylindrical,
     	[Nr, Nz],
     	CellSize(dr*ones(Nr+2), dz*ones(Nz+2), [0.0]),
     	CellLocation([1:Nr;]*dr.-dr/2.0,[1:Nz;]*dz.-dz/2.0,[0.0]),
@@ -420,7 +397,7 @@ function createMeshCylindrical2D{T<:Real}(facelocationR::Array{T,1}, facelocatio
     Nx = length(facelocationR)-1
     Ny = length(facelocationY)-1
     G=reshape([1:(Nx+2)*(Ny+2);], Nx+2, Ny+2)
-    MeshStructure(2.5,
+    MeshStructure(mesh2DCylindrical,
     	[Nx, Ny],
     	CellSize(
             [
@@ -469,7 +446,7 @@ function createMesh3D(Nx::Int, Ny::Int, Nz::Int, Width::Real, Height::Real, Dept
     dy = Height/Ny
     dz = Depth/Nz
     G=reshape([1:(Nx+2)*(Ny+2)*(Nz+2);], Nx+2, Ny+2, Nz+2)
-    MeshStructure(3,
+    MeshStructure(mesh3D,
     	[Nx, Ny, Nz],
     	CellSize(dx*ones(Nx+2), dy*ones(Ny+2), dz*ones(Nz+2)),
     	CellLocation(
@@ -508,85 +485,156 @@ fX = [0.0; 0.05; 0.1:0.1:1.0;]
 fY = [0.0; 0.05; 0.12; 0.2:0.2:3.0;]
 fz = [0.0:0.1:0.5;]
 
-m=createMesh2D(fX, fY, fZ)
+m=createMesh3D(fX, fY, fZ)
 ```
 """
 function createMesh3D{T<:Real}(facelocationX::Array{T,1}, facelocationY::Array{T,1}, facelocationZ::Array{T,1})
-Nx = length(facelocationX)-1
-Ny = length(facelocationY)-1
-Nz = length(facelocationZ)-1
-G=reshape([1:(Nx+2)*(Ny+2)*(Nz+2);], Nx+2, Ny+2, Nz+2)
-MeshStructure(3,
-	[Nx, Ny, Nz],
-	CellSize([facelocationX[2]-facelocationX[1]; facelocationX[2:end]-facelocationX[1:end-1]; facelocationX[end]-facelocationX[end-1]],
-	  [facelocationY[2]-facelocationY[1]; facelocationY[2:end]-facelocationY[1:end-1]; facelocationY[end]-facelocationY[end-1]],
-	  [facelocationZ[2]-facelocationZ[1]; facelocationZ[2:end]-facelocationZ[1:end-1]; facelocationZ[end]-facelocationZ[end-1]]),
-	CellLocation(0.5*(facelocationX[2:end]+facelocationX[1:end-1]),
-	  0.5*(facelocationY[2:end]+facelocationY[1:end-1]),
-	  0.5*(facelocationZ[2:end]+facelocationZ[1:end-1])),
-	FaceLocation(facelocationX, facelocationY, facelocationZ),
-	G[[1,end],[1,end],[1,end]][:],
-	[G[[1, end], [1, end], 2:Nz+1][:];
-	G[[1, end], 2:Ny+1, [1, end]][:];
-	G[2:Nx+1, [1, end], [1, end]][:]])
+    Nx = length(facelocationX)-1
+    Ny = length(facelocationY)-1
+    Nz = length(facelocationZ)-1
+    G=reshape([1:(Nx+2)*(Ny+2)*(Nz+2);], Nx+2, Ny+2, Nz+2)
+    MeshStructure(mesh3D,
+    	[Nx, Ny, Nz],
+    	CellSize(
+            [
+                facelocationX[2]-facelocationX[1];
+                facelocationX[2:end]-facelocationX[1:end-1];
+                facelocationX[end]-facelocationX[end-1]
+            ],
+    	    [
+                facelocationY[2]-facelocationY[1];
+                facelocationY[2:end]-facelocationY[1:end-1];
+                facelocationY[end]-facelocationY[end-1]
+            ],
+    	    [
+                facelocationZ[2]-facelocationZ[1];
+                facelocationZ[2:end]-facelocationZ[1:end-1];
+                facelocationZ[end]-facelocationZ[end-1]
+            ]),
+    	CellLocation(
+            0.5*(facelocationX[2:end]+facelocationX[1:end-1]),
+    	    0.5*(facelocationY[2:end]+facelocationY[1:end-1]),
+        	0.5*(facelocationZ[2:end]+facelocationZ[1:end-1])),
+    	FaceLocation(facelocationX, facelocationY, facelocationZ),
+    	G[[1,end],[1,end],[1,end]][:],
+    	[
+            G[[1, end], [1, end], 2:Nz+1][:];
+    	    G[[1, end], 2:Ny+1, [1, end]][:];
+        	G[2:Nx+1, [1, end], [1, end]][:]
+        ])
 end
 
-# TODO: docstring for uniform cylindrical 3D mesh
-# TODO: formatting for uniform cylindrical 3D mesh
 # %% ================== 3D CYLINDRICAL MESH ===================================
-function createMeshCylindrical3D(Nr::Int, Ntheta::Int, Nz::Int, Radius::Real, Angle::Real, Height::Real)
-# builds a uniform 3D mesh:
-# Nr is the number of cells in x direction
-# Ntheta is the number of cells in y direction
-# Nz is the number of cells in z direction
-# Radius is the domain length in x direction
-# Angle is the domain length in y direction
-# Depth is the domain length in z direction
+"""
+Creates a uniform mesh on a 3D cylindrical domain
 
+m = createMeshCylindrical3D(Nr, Ntheta, Nz, Radius, Angle, Height)
+
+Inputs:
+
+   + Nr (int): number of cells along radial direction
+   + Ntheta (int): number of cells along angular direction
+   + Nz (int): number of cells in vertical direction
+   + Radius, Angle, Height: upper boundary of the domain, notice: Angle ≤ 2π
+
+Outputs:
+
+   + m: a mesh structure
+
+Usage:
+
+```julia
+m=createMeshCylindrical3D(20, 30, 40, 1.0, π, 3.2)
+```
+"""
+function createMeshCylindrical3D(Nr::Int, Ntheta::Int, Nz::Int, Radius::Real, Angle::Real, Height::Real)
 # numbering system of cells, like the single index numbering of Matlab
 # +2 is added to account for the ghost cells that are added at
 # the boundaries
-if Angle>2*pi
-	Angle = 2*pi
-	println("The domain size adjusted to match a maximum of 2*pi.")
-end
-dr = Radius/Nr
-dtheta = Angle/Ntheta
-dz = Height/Nz
-G=reshape([1:(Nr+2)*(Ntheta+2)*(Nz+2);], Nr+2, Ntheta+2, Nz+2)
-MeshStructure(3.2,
-	[Nr, Ntheta, Nz],
-	CellSize(dr*ones(Nr+2), dtheta*ones(Ntheta+2), dz*ones(Nz+2)),
-	CellLocation([1:Nr;]*dr.-dr/2.0, [1:Ntheta;]*dtheta.-dtheta/2.0, [1:Nz;]*dz.-dz/2.0),
-	FaceLocation([0:Nr;]*dr, [0:Ntheta;]*dtheta, [0:Nz;]*dz),
-	G[[1,end],[1,end],[1,end]][:],
-	[G[[1, end], [1, end], 2:Nz+1][:];
-	G[[1, end], 2:Ntheta+1, [1, end]][:];
-	G[2:Nr+1, [1, end], [1, end]][:]])
+    if Angle>2*pi
+    	Angle = 2*pi
+    	warn("The domain size adjusted to match a maximum of 2π")
+    end
+    dr = Radius/Nr
+    dtheta = Angle/Ntheta
+    dz = Height/Nz
+    G=reshape([1:(Nr+2)*(Ntheta+2)*(Nz+2);], Nr+2, Ntheta+2, Nz+2)
+    MeshStructure(mesh3DCylindrical,
+    	[Nr, Ntheta, Nz],
+    	CellSize(dr*ones(Nr+2), dtheta*ones(Ntheta+2), dz*ones(Nz+2)),
+    	CellLocation(
+            [1:Nr;]*dr.-dr/2.0,
+            [1:Ntheta;]*dtheta.-dtheta/2.0,
+            [1:Nz;]*dz.-dz/2.0),
+    	FaceLocation([0:Nr;]*dr, [0:Ntheta;]*dtheta, [0:Nz;]*dz),
+    	G[[1,end],[1,end],[1,end]][:],
+    	[
+            G[[1, end], [1, end], 2:Nz+1][:];
+        	G[[1, end], 2:Ntheta+1, [1, end]][:];
+        	G[2:Nr+1, [1, end], [1, end]][:]
+        ])
 end
 
-# TODO: docstring for nonuniform cylindrical 3D mesh
-# TODO: formatting for nonuniform cylindrical 3D mesh
+"""
+Creates a mesh on a 3D cylindrical domain with specified face locations
+
+```
+m = createMeshCylindrical3D(facelocationR, facelocationTheta, facelocationZ)
+```
+
+Inputs:
+
+   + facelocation*: location of faces in each direction: radial, angular, vertical
+
+Outputs:
+
+   + m: a mesh structure
+
+Usage:
+
+```julia
+fR = [0.0:0.02:0.08;0.1:0.1:1.0;]
+fΘ = [0.0; 0.1; 0.2:0.2:1.0;]
+fZ = [0.0:0.1:3.1;]
+m=createMeshCylindrical3D(fR, fΘ, fZ)
+```
+"""
 function createMeshCylindrical3D{T<:Real}(facelocationR::Array{T,1}, facelocationTheta::Array{T,1}, facelocationZ::Array{T,1})
-if facelocationTheta[end]>2*pi
-	facelocationTheta = facelocationTheta/facelocationTheta[end]*2.0*pi
-	println("The domain size adjusted to match a maximum of 2*pi.")
-end
-Nx = length(facelocationR)-1
-Ny = length(facelocationTheta)-1
-Nz = length(facelocationZ)-1
-G=reshape([1:(Nx+2)*(Ny+2)*(Nz+2);], Nx+2, Ny+2, Nz+2)
-MeshStructure(3.2,
-	[Nx, Ny, Nz],
-	CellSize([facelocationR[2]-facelocationR[1]; facelocationR[2:end]-facelocationR[1:end-1]; facelocationR[end]-facelocationR[end-1]],
-	  [facelocationTheta[2]-facelocationTheta[1]; facelocationTheta[2:end]-facelocationTheta[1:end-1]; facelocationTheta[end]-facelocationTheta[end-1]],
-	  [facelocationZ[2]-facelocationZ[1]; facelocationZ[2:end]-facelocationZ[1:end-1]; facelocationZ[end]-facelocationZ[end-1]]),
-	CellLocation(0.5*(facelocationR[2:end]+facelocationR[1:end-1]),
-	  0.5*(facelocationTheta[2:end]+facelocationTheta[1:end-1]),
-	  0.5*(facelocationZ[2:end]+facelocationZ[1:end-1])),
-	FaceLocation(facelocationR, facelocationTheta, facelocationZ),
-	G[[1,end],[1,end],[1,end]][:],
-	[G[[1, end], [1, end], 2:Nz+1][:];
-	G[[1, end], 2:Ny+1, [1, end]][:];
-	G[2:Nx+1, [1, end], [1, end]][:]])
+    if facelocationTheta[end]>2*pi
+    	facelocationTheta = facelocationTheta/facelocationTheta[end]*2.0*pi
+    	println("The domain size adjusted to match a maximum of 2*pi.")
+    end
+    Nx = length(facelocationR)-1
+    Ny = length(facelocationTheta)-1
+    Nz = length(facelocationZ)-1
+    G=reshape([1:(Nx+2)*(Ny+2)*(Nz+2);], Nx+2, Ny+2, Nz+2)
+    MeshStructure(mesh3DCylindrical,
+    	[Nx, Ny, Nz],
+    	CellSize(
+        [
+            facelocationR[2]-facelocationR[1];
+            facelocationR[2:end]-facelocationR[1:end-1];
+            facelocationR[end]-facelocationR[end-1]
+        ],
+    	[
+            facelocationTheta[2]-facelocationTheta[1];
+            facelocationTheta[2:end]-facelocationTheta[1:end-1];
+            facelocationTheta[end]-facelocationTheta[end-1]
+        ],
+    	[
+            facelocationZ[2]-facelocationZ[1];
+            facelocationZ[2:end]-facelocationZ[1:end-1];
+            facelocationZ[end]-facelocationZ[end-1]
+        ]),
+    	CellLocation(
+            0.5*(facelocationR[2:end]+facelocationR[1:end-1]),
+        	0.5*(facelocationTheta[2:end]+facelocationTheta[1:end-1]),
+        	0.5*(facelocationZ[2:end]+facelocationZ[1:end-1])),
+    	FaceLocation(facelocationR, facelocationTheta, facelocationZ),
+    	G[[1,end],[1,end],[1,end]][:],
+    	[
+            G[[1, end], [1, end], 2:Nz+1][:];
+        	G[[1, end], 2:Ny+1, [1, end]][:];
+        	G[2:Nx+1, [1, end], [1, end]][:]
+        ])
 end
