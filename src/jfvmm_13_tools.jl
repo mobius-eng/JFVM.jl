@@ -4,7 +4,72 @@
 # simulkade.com
 # ===============================
 
-function fluxLimiter(flName::AbstractString)
+abstract FluxLimiter
+
+type FlCHARM <: FluxLimiter end
+
+const CHARM = FlCHARM()
+
+type FlHCUS <: FluxLimiter end
+
+const HCUS = FlHCUS()
+
+type FlHQUICK <: FluxLimiter end
+
+const HQUICK = FlHQUICK()
+
+type FlOSPRE <: FluxLimiter end
+
+const OSPRE = FlOSPRE()
+
+type FlVanLeer <: FluxLimiter end
+
+const VanLeer = FlVanLeer()
+
+type FlVanAlbada1 <: FluxLimiter end
+
+const VanAlbada1 = FlVanAlbada1()
+
+type FlVanAlbada2 <: FluxLimiter end
+
+const VanAlbada2 = FlVanAlbada2()
+
+type FlMinMod <: FluxLimiter end
+
+const MinMod = FlMinMod()
+
+type FlSUPERBEE <: FluxLimiter end
+
+const SUPERBEE = FlSUPERBEE()
+
+type FlOsher <: FluxLimiter end
+
+const Osher = FlOsher()
+
+type FlSweby <: FluxLimiter end
+
+const Sweby = FlSweby()
+
+type FlSmart <: FluxLimiter end
+
+const Smart = FlSmart()
+
+type FlKoren <: FluxLimiter end
+
+const Koren = FlKoren()
+
+type FlMUSCL <: FluxLimiter end
+
+const MUSCL = FlMUSCL()
+
+type FlQUICK <: FluxLimiter end
+
+const QUICK = FlQUICK()
+
+type FlUMIST <: FluxLimiter end
+
+const MIST = FlUMIST()
+
 # This function returns a function handle to a flux limiter of user's
 # choice.
 # available flux limiters are: 'CHARM', 'HCUS', 'HQUICK', 'VanLeer',
@@ -14,121 +79,138 @@ function fluxLimiter(flName::AbstractString)
 # <http://en.wikipedia.org/wiki/Flux_limiter>
 
 # find the flux limiter function
+fluxLimiter(::FlCHARM) = r->((r.>0.0).*r.*(3.0*r+1.0)./(((r+1.0).^2.0)+eps()*(r.==-1.0)))
+fluxLimiter(::FlHCUS) = r->(1.5*(r+abs(r))./(r+2.0))
 
-if flName=="CHARM"
-  r->((r.>0.0).*r.*(3.0*r+1.0)./(((r+1.0).^2.0)+eps()*(r.==-1.0)))
-elseif flName=="HCUS"
-  r->(1.5*(r+abs(r))./(r+2.0))
-elseif flName=="HQUICK"
-  r->(2.0*(r+abs(r))./((r+3.0)+eps()*(r.==-3.0)))
-elseif flName=="ospre"
-  r->((1.5*r.*(r+1.0))./(r.*(r+1.0)+1.0+eps()*((r.*(r+1.0)+1.0).==0.0)))
-elseif flName=="VanLeer"
-  r->((r+abs(r))./(1.0+abs(r)))
-elseif flName=="VanAlbada1"
-  r->((r+r.*r)./(1.0+r.*r))
-elseif flName=="VanAlbada2"
-  r->(2.0*r./(1+r.*r))
-elseif flName=="MinMod"
-  r->((r>0.0).*min(r,1.0))
-elseif flName=="SUPERBEE"
-  r->(max(0.0, max(min(2.0*r,1.0), min(r,2.0))))
-elseif flName=="Osher"
-  b=1.5
-  r->(max(0.0, min(r,b)))
-elseif flName=="Sweby"
+fluxLimiter(::FlHQUICK) = r->(2.0*(r+abs(r))./((r+3.0)+eps()*(r.==-3.0)))
+fluxLimiter(::FlOSPRE) = r->((1.5*r.*(r+1.0))./(r.*(r+1.0)+1.0+eps()*((r.*(r+1.0)+1.0).==0.0)))
+fluxLimiter(::FlVanLeer) = r->((r+abs(r))./(1.0+abs(r)))
+fluxLimiter(::FlVanAlbada1) = r->((r+r.*r)./(1.0+r.*r))
+fluxLimiter(::FlVanAlbada2) = r->(2.0*r./(1+r.*r))
+fluxLimiter(::FlMinMod) = r->((r>0.0).*min(r,1.0))
+fluxLimiter(::FlSUPERBEE) = r->(max(0.0, max(min(2.0*r,1.0), min(r,2.0))))
+fluxLimiter(::FlOsher) = r->(max(0.0, min(r,1.5)))
+
+function fluxLimiter(::FlSweby)
   b=1.5
   r->(max(0.0, max(min(b*r,1.0), min(r,b))))
-elseif flName=="smart"
-  r->(max(0.0, min(4.0,min(0.25+0.75*r, 2.0*r))))
-elseif flName=="Koren"
-  r->(max(0.0, min(2.0*r, min((1.0+2.0*r)/3.0, 2.0))))
-elseif flName=="MUSCL"
-  r->(max(0.0, min(2.0*r, min(0.5*(1+r), 2.0))))
-elseif flName=="QUICK"
-  r->(max(0.0, min(2.0, min(2.0*r, (3.0+r)/4.0))))
-elseif flName=="UMIST"
-  r->(max(0.0, min(2.0, min(2.0*r, min((1.0+3.0*r)/4.0, (3.0+r)/4.0)))))
-else
-  println("The flux limiter of your choice is not available. The SUPERBEE flux limiter is used instead.")
-  r->(max(0.0, max(min(2.0*r,1.0), min(r,2.0))))
 end
 
-end
+fluxLimiter(::FlSmart) = r->(max(0.0, min(4.0,min(0.25+0.75*r, 2.0*r))))
+fluxLimiter(::FlKoren) = r->(max(0.0, min(2.0*r, min((1.0+2.0*r)/3.0, 2.0))))
+fluxLimiter(::FlMUSCL) = r->(max(0.0, min(2.0*r, min(0.5*(1+r), 2.0))))
+fluxLimiter(::FlQUICK) = r->(max(0.0, min(2.0, min(2.0*r, (3.0+r)/4.0))))
+fluxLimiter(::FlUMIST) = r->(max(0.0, min(2.0, min(2.0*r, min((1.0+3.0*r)/4.0, (3.0+r)/4.0)))))
 
+
+# %% faceEval
+"""
+Applies function to a face value
+
+```julia
+xnew = faceEval(fn, x)
+```
+
+Input:
+
+- `fn` : function to be applied, it will be applid to the whole array of values
+- `x` : face field variable
+
+Output:
+
+- `xnew` : transformed face field variable
+
+"""
 function faceEval(f::Function, x::FaceValue)
-FaceValue(x.domain,
-    f(x.xvalue),
-    f(x.yvalue),
-    f(x.zvalue))
+    FaceValue(x.domain,
+        f(x.xvalue),
+        f(x.yvalue),
+        f(x.zvalue))
 end
 
 function faceEval(f::Function, x1::FaceValue, x2::FaceValue)
-FaceValue(x1.domain,
-    f(x1.xvalue, x2.xvalue),
-    f(x1.yvalue, x2.yvalue),
-    f(x1.zvalue, x2.zvalue))
+    FaceValue(x1.domain,
+        f(x1.xvalue, x2.xvalue),
+        f(x1.yvalue, x2.yvalue),
+        f(x1.zvalue, x2.zvalue))
 end
 
 function faceEval(f::Function, x1::FaceValue, x2::FaceValue, x3::FaceValue)
-FaceValue(x1.domain,
-    f(x1.xvalue, x2.xvalue, x3.xvalue),
-    f(x1.yvalue, x2.yvalue, x3.yvalue),
-    f(x1.zvalue, x2.zvalue, x3.zvalue))
+    FaceValue(x1.domain,
+        f(x1.xvalue, x2.xvalue, x3.xvalue),
+        f(x1.yvalue, x2.yvalue, x3.yvalue),
+        f(x1.zvalue, x2.zvalue, x3.zvalue))
 end
 
 function faceEval(f::Function, x1::FaceValue, x2::FaceValue, x3::FaceValue, x4::FaceValue)
-FaceValue(x1.domain,
-    f(x1.xvalue, x2.xvalue, x3.xvalue, x4.xvalue),
-    f(x1.yvalue, x2.yvalue, x3.yvalue, x4.yvalue),
-    f(x1.zvalue, x2.zvalue, x3.zvalue, x4.zvalue))
+    FaceValue(x1.domain,
+        f(x1.xvalue, x2.xvalue, x3.xvalue, x4.xvalue),
+        f(x1.yvalue, x2.yvalue, x3.yvalue, x4.yvalue),
+        f(x1.zvalue, x2.zvalue, x3.zvalue, x4.zvalue))
 end
 
 function faceEval(f::Function, x1::FaceValue, x2::FaceValue, x3::FaceValue, x4::FaceValue, x5::FaceValue)
-FaceValue(x1.domain,
-    f(x1.xvalue, x2.xvalue, x3.xvalue, x4.xvalue, x5.xvalue),
-    f(x1.yvalue, x2.yvalue, x3.yvalue, x4.yvalue, x5.yvalue),
-    f(x1.zvalue, x2.zvalue, x3.zvalue, x4.zvalue, x5.zvalue))
+    FaceValue(x1.domain,
+        f(x1.xvalue, x2.xvalue, x3.xvalue, x4.xvalue, x5.xvalue),
+        f(x1.yvalue, x2.yvalue, x3.yvalue, x4.yvalue, x5.yvalue),
+        f(x1.zvalue, x2.zvalue, x3.zvalue, x4.zvalue, x5.zvalue))
 end
 
 function faceEval(f::Function, x1::FaceValue, x2::FaceValue, x3::FaceValue, x4::FaceValue, x5::FaceValue, x6::FaceValue)
-FaceValue(x1.domain,
-    f(x1.xvalue, x2.xvalue, x3.xvalue, x4.xvalue, x5.xvalue, x6.xvalue),
-    f(x1.yvalue, x2.yvalue, x3.yvalue, x4.yvalue, x5.yvalue, x6.yvalue),
-    f(x1.zvalue, x2.zvalue, x3.zvalue, x4.zvalue, x5.zvalue, x6.zvalue))
+    FaceValue(x1.domain,
+        f(x1.xvalue, x2.xvalue, x3.xvalue, x4.xvalue, x5.xvalue, x6.xvalue),
+        f(x1.yvalue, x2.yvalue, x3.yvalue, x4.yvalue, x5.yvalue, x6.yvalue),
+        f(x1.zvalue, x2.zvalue, x3.zvalue, x4.zvalue, x5.zvalue, x6.zvalue))
 end
 
+"""
+Applies function to cell field values
+
+```julia
+xnew = cellEval(fn, x)
+```
+
+Input:
+
+- `fn` : function to be applied, it will be applid to the whole array of values
+- `x` : cell field variable
+
+Output:
+
+- `xnew` : transformed cell field variable
+
+"""
 function cellEval(f::Function, x::CellValue)
-CellValue(x1.domain,
-    f(x.value))
+    CellValue(x1.domain,
+        f(x.value))
 end
 
 function cellEval(f::Function, x1::CellValue, x2::CellValue)
-CellValue(x1.domain,
-    f(x1.value, x2.value))
+    CellValue(x1.domain,
+        f(x1.value, x2.value))
 end
 
 function cellEval(f::Function, x1::CellValue, x2::CellValue, x3::CellValue)
-CellValue(x1.domain,
-    f(x1.value, x2.value, x3.value))
+    CellValue(x1.domain,
+        f(x1.value, x2.value, x3.value))
 end
 
 function cellEval(f::Function, x1::CellValue, x2::CellValue, x3::CellValue, x4::CellValue)
-CellValue(x1.domain,
-    f(x1.value, x2.value, x3.value, x4.value))
+    CellValue(x1.domain,
+        f(x1.value, x2.value, x3.value, x4.value))
 end
 
 function cellEval(f::Function, x1::CellValue, x2::CellValue, x3::CellValue, x4::CellValue, x5::CellValue)
-CellValue(x1.domain,
-    f(x1.value, x2.value, x3.value, x4.value, x5.value))
+    CellValue(x1.domain,
+        f(x1.value, x2.value, x3.value, x4.value, x5.value))
 end
 
 function cellEval(f::Function, x1::CellValue, x2::CellValue, x3::CellValue, x4::CellValue, x5::CellValue, x6::CellValue)
-CellValue(x1.domain,
-    f(x1.value, x2.value, x3.value, x4.value, x5.value, x6.value))
+    CellValue(x1.domain,
+        f(x1.value, x2.value, x3.value, x4.value, x5.value, x6.value))
 end
 
-# ========================= Generate random perm field ======================
+# %% ========================= Generate random perm field ======================
 function permfieldlogrndg(Nx,k_avrg,V_dp,cl)
   # 1D random field generator:
   # hdf: Gaussian
@@ -260,29 +342,22 @@ end
 # <============================== 3D ==============================
 
 """
-function cellvol = cellVolume(m::MeshStructure)
-returns the volume of each cell in the form of a cell variable
+Returns the volume of each cell in the form of a cell variable
+
+```julia
+cellvol = cellVolume(m::MeshStructure)
+```
 """
-function cellVolume(m::MeshStructure)
-  dim = m.dimension
-  BC = createBC(m)
-  if dim==1
-          c=m.cellsize.x[2:end-1]
-  elseif dim==1.5
-          c=2.0*pi()*m.cellsize.x[2:end-1].*m.cellcenters.x
-  elseif dim==2
-          c=m.cellsize.x[2:end-1]*m.cellsize.y[2:end-1]'
-  elseif dim== 2.5 # cylindrical
-          c=2.0*pi*m.cellcenters.x.*m.cellsize.x[2:end-1]*m.cellsize.y[2:end-1]'
-  elseif dim==2.8 # radial
-          c=m.cellcenters.x.*m.cellsize.x[2:end-1]*m.cellsize.y[2:end-1]'
-  elseif dim==3
-          error("Not available yet")
-  elseif dim==3.2
-          error("Not available yet")
-  end
-  cellvol= createCellVariable(m, c, BC)
-end
+cellVolume(m::MeshStructure) =
+    createCellVariable(m, calcCellVolume(m.meshtype, m), createBC(m))
+
+calcCellVolume(::Mesh1D, m) = m.cellsize.x[2:end-1]
+calcCellVolume(::Mesh1DPolar, m) = 2π*m.cellsize.x[2:end-1].*m.cellcenters.x
+calcCellVolume(::Mesh2D, m) = m.cellsize.x[2:end-1] * m.cellsize.y[2:end-1]'
+calcCellVolume(::Mesh2DCylindrical, m) = 2π*m.cellcenters.x.*m.cellsize.x[2:end-1]*m.cellsize.y[2:end-1]'
+calcCellVolume(::Mesh2DPolar, m) = cellcenters.x.*m.cellsize.x[2:end-1]*m.cellsize.y[2:end-1]'
+calcCellVolume(::Mesh3D, m) = error("Not implemented yet")
+calcCellVolume(::Mesh3DCylindrical, m) = error("Not implemented yet")
 
 """
 this function reshapes a vetorized cell variable to its domain shape
@@ -305,15 +380,15 @@ end
 """
 returns the internal cells of a cell variable as an array of the same shape
 """
-function internalCells(phi::CellValue)
-  d = phi.domain.dimension
+function internalCells{T<:Real}(phi::CellValue{T})
+  d = length(phi.domain.dims)
   N = phi.domain.dims
 
-  if (d==1) || (d==1.5)
+  if d==1
   	cellvar= phi.value[2:N[1]+1]
-  elseif (d==2) || (d==2.5) || (d==2.8)
+  elseif d==2
   	cellvar= phi.value[2:N[1]+1, 2:N[2]+1]
-  elseif (d==3) || (d==3.2)
+  else #(d==3)
       cellvar= phi.value[2:N[1]+1, 2:N[2]+1, 2:N[3]+1]
   end
   return cellvar

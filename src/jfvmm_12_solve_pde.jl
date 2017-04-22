@@ -5,30 +5,30 @@
 # ===============================
 
 # =============================== SOLVERS ===================================
-function solveLinearPDE(m::MeshStructure, M::SparseMatrixCSC{Float64, Int64}, RHS::Array{Float64,1})
-N=m.dims
-x=M\RHS # until the problem is solved with Julia "\" solver
-phi = CellValue(m, reshape(full(x), tuple(N+2...)))
-phi
+function solveLinearPDE{T<:Real}(m::MeshStructure{T}, M::SparseMatrixCSC{T, Int64}, RHS::Array{T,1})
+    N=m.dims
+    x=M\RHS # until the problem is solved with Julia "\" solver
+    phi = CellValue(m, reshape(full(x), tuple(N+2...)))
+    phi
 end
 
-function solvePDE(m::MeshStructure, M::SparseMatrixCSC{Float64, Int64}, RHS::Array{Float64,1})
-N=m.dims
-x=M\RHS # until the problem is solved with Julia "\" solver
-phi = CellValue(m, reshape(full(x), tuple(N+2...)))
-phi
+function solvePDE{T<:Real}(m::MeshStructure{T}, M::SparseMatrixCSC{T, Int64}, RHS::Array{T,1})
+    N=m.dims
+    x=M\RHS # until the problem is solved with Julia "\" solver
+    phi = CellValue(m, reshape(full(x), tuple(N+2...)))
+    phi
 end
 
-function solveMUMPSLinearPDE(m::MeshStructure, M::SparseMatrixCSC{Float64, Int64}, RHS::Array{Float64,1})
-N=m.dims
-x=solveMUMPS(M,RHS) # until the problem is solved with Julia "\" solver
-phi = CellValue(m, reshape(full(x), tuple(N+2...)))
-phi
-end
+# function solveMUMPSLinearPDE(m::MeshStructure, M::SparseMatrixCSC{Float64, Int64}, RHS::Array{Float64,1})
+# N=m.dims
+# x=solveMUMPS(M,RHS) # until the problem is solved with Julia "\" solver
+# phi = CellValue(m, reshape(full(x), tuple(N+2...)))
+# phi
+# end
 
-function solveExplicitPDE(phi_old::CellValue, dt::Real, RHS::Array{Float64,1},
-  BC::BoundaryCondition)
-  d = phi_old.domain.dimension
+function solveExplicitPDE{T<:Real}(phi_old::CellValue{T}, dt::T, RHS::Array{T,1},
+  BC::BoundaryCondition{T})
+  d = length(phi_old.domain.dims)
   N = phi_old.domain.dims
   phi_val=reshape(phi_old.value[:]+dt*RHS, tuple(N+2...))
   if (d==1) || (d==1.5)
@@ -41,9 +41,9 @@ function solveExplicitPDE(phi_old::CellValue, dt::Real, RHS::Array{Float64,1},
   return createCellVariable(phi_old.domain, phi_val, BC)
 end
 
-function solveExplicitPDE(phi_old::CellValue, dt::Real, RHS::Array{Float64,1},
-  BC::BoundaryCondition, alfa::CellValue)
-  d = phi_old.domain.dimension
+function solveExplicitPDE{T<:Real}(phi_old::CellValue{T}, dt::T, RHS::Array{T,1},
+  BC::BoundaryCondition{T}, alfa::CellValue{T})
+  d = length(phi_old.domain.dims)
   N = phi_old.domain.dims
   phi_val=reshape(phi_old.value[:]+dt*RHS./alfa.value[:], tuple(N+2...))
   if (d==1) || (d==1.5)

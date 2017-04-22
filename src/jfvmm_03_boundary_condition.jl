@@ -38,7 +38,7 @@ function create1DBC{T<:Real}(m :: MeshStructure{T})
     BoundaryCondition(m,
         # Active: left and right
         BorderValue([onev], [zerov], [zerov], false),
-        BorderValue([onev], [one], [one], false),
+        BorderValue([onev], [onev], [onev], false),
         # Nonactive
         BorderValue([zerov], [zerov], [zerov], false),
         BorderValue([zerov], [zerov], [zerov], false),
@@ -79,7 +79,7 @@ condition
 ```
 """
 boundaryConditionTerm(bc :: BoundaryCondition) =
-    boundaryConditionTerm(bc.domain.meshType, bc)
+    boundaryConditionTerm(bc.domain.meshtype, bc)
 
 
 boundaryConditionTerm(::Mesh1D, bc) = boundaryCondition1D(bc)
@@ -398,7 +398,6 @@ function boundaryCondition2D{T<:Real}(BC::BoundaryCondition{T})
     (BCMatrix, BCRHS)
 end
 
-# TODO: continue changing types
 # %% ========================= BOUNDARY Radial 2D ==========================
 """
 !!! INTERNAL !!!
@@ -406,8 +405,8 @@ end
 Creates the matrix of coefficients and RHS vector for a specified boundary
 condition in 2D polar domain
 """
-function boundaryConditionRadial2D(BC::BoundaryCondition)
-    Nx, Ntheta = tuple(BC.domain.dims...)
+function boundaryConditionRadial2D{T<:Real}(BC::BoundaryCondition{T})
+    Nx, Ntheta = BC.domain.dims[1:2]
     G=reshape([1:(Nx+2)*(Ntheta+2);], Nx+2, Ntheta+2)
     dx_1 = BC.domain.cellsize.x[1]
     dx_end = BC.domain.cellsize.x[end]
@@ -420,16 +419,16 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
     # define the vectors to be used for the creation of the sparse matrix
     ii = zeros(Int64,nb)
     jj = zeros(Int64,nb)
-    s = zeros(Float64, nb) # Float64 by default, but specify the type just in case
+    s = zeros(T, nb)
 
     # define the RHS column vector
-    BCRHS = zeros((Nx+2)*(Ntheta+2))
+    BCRHS = zeros(T,(Nx+2)*(Ntheta+2))
 
     for q = 1:4
       ii[q] = BC.domain.corner[q]
       jj[q] = BC.domain.corner[q]
-      s[q] = maximum(BC.top.b/2.0+BC.top.a./(dtheta_end*rp))
-      BCRHS[BC.domain.corner[q]] = 0.0
+      s[q] = maximum(BC.top.b/2+BC.top.a./(dtheta_end*rp))
+      BCRHS[BC.domain.corner[q]] = zero(T)
     end
     q = 4
     # Assign values to the boundary condition matrix and the RHS vector based
@@ -441,11 +440,11 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = BC.top.b[i-1]/2.0 + BC.top.a[i-1]/(dtheta_end*rp[i-1])
+        s[q] = BC.top.b[i-1]/2 + BC.top.a[i-1]/(dtheta_end*rp[i-1])
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j-1]
-        s[q] = BC.top.b[i-1]/2.0 - BC.top.a[i-1]/(dtheta_end*rp[i-1])
+        s[q] = BC.top.b[i-1]/2 - BC.top.a[i-1]/(dtheta_end*rp[i-1])
         BCRHS[G[i,j]] = BC.top.c[i-1]
       end
       # bottom boundary
@@ -454,11 +453,11 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j+1]
-        s[q] = -(BC.bottom.b[i-1]/2.0 + BC.bottom.a[i-1]/(dtheta_1*rp[i-1]))
+        s[q] = -(BC.bottom.b[i-1]/2 + BC.bottom.a[i-1]/(dtheta_1*rp[i-1]))
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = -(BC.bottom.b[i-1]/2.0 - BC.bottom.a[i-1]/(dtheta_1*rp[i-1]))
+        s[q] = -(BC.bottom.b[i-1]/2 - BC.bottom.a[i-1]/(dtheta_1*rp[i-1]))
         BCRHS[G[i,j]] = -(BC.bottom.c[i-1])
       end
     elseif BC.top.periodic || BC.bottom.periodic  # periodic boundary condition
@@ -468,11 +467,11 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = 1.0
+        s[q] = one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j-1]
-        s[q] = -1.0
+        s[q] = -one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,1]
@@ -481,7 +480,7 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         ii[q] = G[i,j]
         jj[q] = G[i,2]
         s[q] = -dtheta_end/dtheta_1
-        BCRHS[G[i,j]] = 0.0
+        BCRHS[G[i,j]] = zero(T)
       end
       # bottom boundary
       j=1
@@ -489,20 +488,20 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = 1.0
+        s[q] = one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j+1]
-        s[q] = 1.0
+        s[q] = one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,Ny+1]
-        s[q] = -1.0
+        s[q] = -one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,Ny+2]
-        s[q] = -1.0
-        BCRHS[G[i,j]] = 0.0
+        s[q] = -one(T)
+        BCRHS[G[i,j]] = zero(T)
       end
     end
 
@@ -513,11 +512,11 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = BC.right.b[j-1]/2.0 + BC.right.a[j-1]/dx_end
+        s[q] = BC.right.b[j-1]/2 + BC.right.a[j-1]/dx_end
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i-1,j]
-        s[q] = BC.right.b[j-1]/2.0 - BC.right.a[j-1]/dx_end
+        s[q] = BC.right.b[j-1]/2 - BC.right.a[j-1]/dx_end
         BCRHS[G[i,j]] = BC.right.c[j-1]
       end
       # Left boundary
@@ -526,11 +525,11 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i+1,j]
-        s[q] = -(BC.left.b[j-1]/2.0 + BC.left.a[j-1]/dx_1)
+        s[q] = -(BC.left.b[j-1]/2 + BC.left.a[j-1]/dx_1)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = -(BC.left.b[j-1]/2.0 - BC.left.a[j-1]/dx_1)
+        s[q] = -(BC.left.b[j-1]/2 - BC.left.a[j-1]/dx_1)
         BCRHS[G[i,j]] = -(BC.left.c[j-1])
       end
     elseif BC.right.periodic || BC.left.periodic  # periodic boundary condition
@@ -540,11 +539,11 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = 1.0
+        s[q] = one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i-1,j]
-        s[q] = -1.0
+        s[q] = -one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[1,j]
@@ -553,7 +552,7 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         ii[q] = G[i,j]
         jj[q] = G[2,j]
         s[q] = -dx_end/dx_1
-        BCRHS[G[i,j]] = 0.0
+        BCRHS[G[i,j]] = zero(T)
       end
       # Left boundary
       i = 1;
@@ -561,20 +560,20 @@ function boundaryConditionRadial2D(BC::BoundaryCondition)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i,j]
-        s[q] = 1.0
+        s[q] = one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[i+1,j]
-        s[q] = 1.0
+        s[q] = one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[Nx+1,j]
-        s[q] = -1.0
+        s[q] = -one(T)
         q+=1
         ii[q] = G[i,j]
         jj[q] = G[Nx+2,j]
-        s[q] = -1.0
-        BCRHS[G[i,j]] = 0.0
+        s[q] = -one(T)
+        BCRHS[G[i,j]] = zero(T)
       end
     end
 
@@ -590,8 +589,8 @@ end
 Creates the matrix of coefficients and RHS vector for a specified boundary
 condition in 3D Cartesian domain
 """
-function boundaryCondition3D(BC::BoundaryCondition)
-    Nx, Ny, Nz = tuple(BC.domain.dims...)
+function boundaryCondition3D{T<:Real}(BC::BoundaryCondition{T})
+    Nx, Ny, Nz = BC.domain.dims
     G=reshape([1:(Nx+2)*(Ny+2)*(Nz+2);], Nx+2, Ny+2, Nz+2)
     dx_1 = BC.domain.cellsize.x[1]
     dx_end = BC.domain.cellsize.x[end]
@@ -606,24 +605,24 @@ function boundaryCondition3D(BC::BoundaryCondition)
     # define the vectors to be used for the creation of the sparse matrix
     ii = zeros(Int64, nb)
     jj = zeros(Int64, nb)
-    s = zeros(Float64, nb)
+    s = zeros(T, nb)
 
     # define the RHS column vector
-    BCRHS = zeros(Float64, (Nx+2)*(Ny+2)*(Nz+2))
+    BCRHS = zeros(T, (Nx+2)*(Ny+2)*(Nz+2))
 
     # assign value to the corner nodes (useless cells)
     q = 1:8
     ii[q] = BC.domain.corner
     jj[q] = BC.domain.corner
     s[q] = 1.0
-    BCRHS[BC.domain.corner] = 0.0
+    BCRHS[BC.domain.corner] = zero(T)
 
     # assign values to the edges (useless cells)
     q = q[end]+[1:length(BC.domain.edge);]
     ii[q] = BC.domain.edge
     jj[q] = BC.domain.edge
     s[q] = 1.0
-    BCRHS[BC.domain.edge] = 0.0
+    BCRHS[BC.domain.edge] = zero(T)
 
     # Assign values to the boundary condition matrix and the RHS vector based
     # on the BC structure
@@ -635,11 +634,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = BC.top.b/2.0 + BC.top.a/dy_end
+        s[q] = BC.top.b/2 + BC.top.a/dy_end
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j-1,k]
-        s[q] = BC.top.b/2.0 - BC.top.a/dy_end
+        s[q] = BC.top.b/2 - BC.top.a/dy_end
         BCRHS[G[i,j,k]] = BC.top.c
 
         # Bottom boundary
@@ -649,11 +648,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j+1,k]
-        s[q] = -(BC.bottom.b/2.0 + BC.bottom.a/dy_1) # consider the reverse direction of normal
+        s[q] = -(BC.bottom.b/2 + BC.bottom.a/dy_1) # consider the reverse direction of normal
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = -(BC.bottom.b/2.0 - BC.bottom.a/dy_1) # consider the reverse direction of normal
+        s[q] = -(BC.bottom.b/2 - BC.bottom.a/dy_1) # consider the reverse direction of normal
         BCRHS[G[i,j,k]] = -(BC.bottom.c)
     elseif BC.top.periodic || BC.bottom.periodic # periodic
         # top boundary
@@ -663,11 +662,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1
+        s[q] = one(T)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j-1,k]
-        s[q] = -1
+        s[q] = -one(T)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,1,k]
@@ -676,7 +675,7 @@ function boundaryCondition3D(BC::BoundaryCondition)
         ii[q] = G[i,j,k]
         jj[q] = G[i,2,k]
         s[q] = -dy_end/dy_1
-        BCRHS[G[i,j,k]] = 0.0
+        BCRHS[G[i,j,k]] = zero(T)
 
         # Bottom boundary
         j=1
@@ -685,20 +684,20 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j+1,k]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,Ny+1,k]
-        s[q] = -1.0
+        s[q] = -one(T)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,Ny+2,k]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -one(T)
+        BCRHS[G[i,j,k]] = zero(T)
     end
 
     if !BC.right.periodic && !BC.left.periodic
@@ -709,11 +708,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = BC.right.b/2.0 + BC.right.a/dx_end
+        s[q] = BC.right.b/2 + BC.right.a/dx_end
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i-1,j,k]
-        s[q] = BC.right.b/2.0 - BC.right.a/dx_end
+        s[q] = BC.right.b/2 - BC.right.a/dx_end
         BCRHS[G[i,j,k]] = BC.right.c
 
         # Left boundary
@@ -723,12 +722,12 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i+1,j,k]
-        s[q] = -(BC.left.b/2.0 + BC.left.a/dx_1)
+        s[q] = -(BC.left.b/2 + BC.left.a/dx_1)
         # consider the reverse direction of normal
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = -(BC.left.b/2.0 - BC.left.a/dx_1)  # consider the reverse direction of normal
+        s[q] = -(BC.left.b/2 - BC.left.a/dx_1)  # consider the reverse direction of normal
         BCRHS[G[i,j,k]] = -(BC.left.c)
     elseif BC.right.periodic || BC.left.periodic # periodic
         # Right boundary
@@ -738,11 +737,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i-1,j,k]
-        s[q] = -1.0
+        s[q] = -one(T)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[1,j,k]
@@ -751,7 +750,7 @@ function boundaryCondition3D(BC::BoundaryCondition)
         ii[q] = G[i,j,k]
         jj[q] = G[2,j,k]
         s[q] = -dx_end/dx_1
-        BCRHS[G[i,j,k]] = 0.0
+        BCRHS[G[i,j,k]] = zero(T)
 
         # Left boundary
         i = 1
@@ -760,20 +759,20 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i+1,j,k]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[Nx+1,j,k]
-        s[q] = -1.0
+        s[q] = -one(T)
         q = q[end]+[1:Ny*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[Nx+2,j,k]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -one(T)
+        BCRHS[G[i,j,k]] = zero(T)
     end
 
     if !BC.front.periodic && !BC.back.periodic
@@ -784,11 +783,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k+1]
-        s[q] = -(BC.back.b/2.0 + BC.back.a/dz_1)  # consider the reverse direction of normal
+        s[q] = -(BC.back.b/2 + BC.back.a/dz_1)  # consider the reverse direction of normal
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = -(BC.back.b/2.0 - BC.back.a/dz_1)  # consider the reverse direction of normal
+        s[q] = -(BC.back.b/2 - BC.back.a/dz_1)  # consider the reverse direction of normal
         BCRHS[G[i,j,k]] = -(BC.back.c)
 
         # Front boundary
@@ -798,11 +797,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = BC.front.b/2.0 + BC.front.a/dz_end
+        s[q] = BC.front.b/2 + BC.front.a/dz_end
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k-1]
-        s[q] = BC.front.b/2.0 - BC.front.a/dz_end
+        s[q] = BC.front.b/2 - BC.front.a/dz_end
         BCRHS[G[i,j,k]] = BC.front.c
     elseif BC.front.periodic || BC.back.periodic  # periodic
         # Back boundary
@@ -812,20 +811,20 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k+1]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,Nz+1]
-        s[q] = -1.0
+        s[q] = -one(T)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,Nz+2]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -one(T)
+        BCRHS[G[i,j,k]] = zero(T)
 
         # Front boundary
         k=Nz+2
@@ -834,11 +833,11 @@ function boundaryCondition3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = one(T)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k-1]
-        s[q] = -1.0
+        s[q] = -one(T)
         q = q[end]+[1:Nx*Ny;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,1]
@@ -847,7 +846,7 @@ function boundaryCondition3D(BC::BoundaryCondition)
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,2]
         s[q] = -dz_end/dz_1
-        BCRHS[G[i,j,k]] = 0.0
+        BCRHS[G[i,j,k]] = zero(T)
     end
 
     # Build the sparse matrix of the boundary conditions
@@ -864,8 +863,8 @@ end
 Creates the matrix of coefficients and RHS vector for a specified boundary
 condition in 2D cylindrical domain
 """
-function boundaryConditionCylindrical3D(BC::BoundaryCondition)
-    Nx, Ntheta, Nz = tuple(BC.domain.dims...)
+function boundaryConditionCylindrical3D{T<:Real}(BC::BoundaryCondition{T})
+    Nx, Ntheta, Nz = BC.domain.dims
     G=reshape([1:(Nx+2)*(Ntheta+2)*(Nz+2);], Nx+2, Ntheta+2, Nz+2)
     dx_1 = BC.domain.cellsize.x[1]
     dx_end = BC.domain.cellsize.x[end]
@@ -883,24 +882,24 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
     # define the vectors to be used for the creation of the sparse matrix
     ii = zeros(Int64, nb)
     jj = zeros(Int64, nb)
-    s = zeros(Float64, nb)
+    s = zeros(T, nb)
 
     # define the RHS column vector
-    BCRHS = zeros(Float64, (Nx+2)*(Ntheta+2)*(Nz+2))
+    BCRHS = zeros(T, (Nx+2)*(Ntheta+2)*(Nz+2))
 
     # assign value to the corner nodes (useless cells)
     q = 1:8
     ii[q] = BC.domain.corner
     jj[q] = BC.domain.corner
-    s[q] = 1.0
-    BCRHS[BC.domain.corner] = 0.0
+    s[q] = 1
+    BCRHS[BC.domain.corner] = 0
 
     # assign values to the edges (useless cells)
     q = q[end]+[1:length(BC.domain.edge);]
     ii[q] = BC.domain.edge
     jj[q] = BC.domain.edge
-    s[q] = 1.0
-    BCRHS[BC.domain.edge] = 0.0
+    s[q] = 1
+    BCRHS[BC.domain.edge] = 0
 
     # Assign values to the boundary condition matrix and the RHS vector based
     # on the BC structure
@@ -912,11 +911,11 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = BC.top.b/2.0 + BC.top.a./(dtheta_end*rp)
+        s[q] = BC.top.b/2 + BC.top.a./(dtheta_end*rp)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j-1,k]
-        s[q] = BC.top.b/2.0 - BC.top.a./(dtheta_end*rp)
+        s[q] = BC.top.b/2 - BC.top.a./(dtheta_end*rp)
         BCRHS[G[i,j,k]] = BC.top.c
 
         # Bottom boundary
@@ -926,11 +925,11 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j+1,k]
-        s[q] = -(BC.bottom.b/2.0 + BC.bottom.a./(dtheta_1*rp)) # consider the reverse direction of normal
+        s[q] = -(BC.bottom.b/2 + BC.bottom.a./(dtheta_1*rp)) # consider the reverse direction of normal
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = -(BC.bottom.b/2.0 - BC.bottom.a./(dtheta_1*rp)) # consider the reverse direction of normal
+        s[q] = -(BC.bottom.b/2 - BC.bottom.a./(dtheta_1*rp)) # consider the reverse direction of normal
         BCRHS[G[i,j,k]] = -(BC.bottom.c)
     elseif BC.top.periodic || BC.bottom.periodic # periodic
         # top boundary
@@ -953,7 +952,7 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         ii[q] = G[i,j,k]
         jj[q] = G[i,2,k]
         s[q] = -1
-        BCRHS[G[i,j,k]] = 0.0
+        BCRHS[G[i,j,k]] = 0
 
         # Bottom boundary
         j=1
@@ -962,20 +961,20 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,Ntheta+1,k]
-        s[q] = -1.0
+        s[q] = -1
         q = q[end]+[1:Nx*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,Ntheta+1,k]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -1
+        BCRHS[G[i,j,k]] = 0
     end
 
     if !BC.right.periodic && !BC.left.periodic
@@ -986,11 +985,11 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = BC.right.b/2.0 + BC.right.a/dx_end
+        s[q] = BC.right.b/2 + BC.right.a/dx_end
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i-1,j,k]
-        s[q] = BC.right.b/2.0 - BC.right.a/dx_end
+        s[q] = BC.right.b/2 - BC.right.a/dx_end
         BCRHS[G[i,j,k]] = BC.right.c
 
         # Left boundary
@@ -1000,12 +999,12 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i+1,j,k]
-        s[q] = -(BC.left.b/2.0 + BC.left.a/dx_1)
+        s[q] = -(BC.left.b/2 + BC.left.a/dx_1)
         # consider the reverse direction of normal
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = -(BC.left.b/2.0 - BC.left.a/dx_1)  # consider the reverse direction of normal
+        s[q] = -(BC.left.b/2 - BC.left.a/dx_1)  # consider the reverse direction of normal
         BCRHS[G[i,j,k]] = -(BC.left.c)
     elseif BC.right.periodic || BC.left.periodic # periodic
         # Right boundary
@@ -1015,20 +1014,20 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[2,j,k]
-        s[q] = -1.0
+        s[q] = -1
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[2,j,k]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -1
+        BCRHS[G[i,j,k]] = 0
 
         # Left boundary
         i = 1
@@ -1037,20 +1036,20 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[Nx+1,j,k]
-        s[q] = -1.0
+        s[q] = -1
         q = q[end]+[1:Ntheta*Nz;]
         ii[q] = G[i,j,k]
         jj[q] = G[Nx+1,j,k]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -1
+        BCRHS[G[i,j,k]] = 0
     end
 
     if !BC.front.periodic && !BC.back.periodic
@@ -1061,11 +1060,11 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k+1]
-        s[q] = -(BC.back.b/2.0 + BC.back.a/dz_1)  # consider the reverse direction of normal
+        s[q] = -(BC.back.b/2 + BC.back.a/dz_1)  # consider the reverse direction of normal
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = -(BC.back.b/2.0 - BC.back.a/dz_1)  # consider the reverse direction of normal
+        s[q] = -(BC.back.b/2 - BC.back.a/dz_1)  # consider the reverse direction of normal
         BCRHS[G[i,j,k]] = -(BC.back.c)
 
         # Front boundary
@@ -1075,11 +1074,11 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = BC.front.b/2.0 + BC.front.a/dz_end
+        s[q] = BC.front.b/2 + BC.front.a/dz_end
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k-1]
-        s[q] = BC.front.b/2.0 - BC.front.a/dz_end
+        s[q] = BC.front.b/2 - BC.front.a/dz_end
         BCRHS[G[i,j,k]] = BC.front.c
     elseif BC.front.periodic || BC.back.periodic  # periodic
         # Back boundary
@@ -1089,20 +1088,20 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,Nz+1]
-        s[q] = -1.0
+        s[q] = -1
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,Nz+1]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -1
+        BCRHS[G[i,j,k]] = 0
 
         # Front boundary
         k=Nz+2
@@ -1111,20 +1110,20 @@ function boundaryConditionCylindrical3D(BC::BoundaryCondition)
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,k]
-        s[q] = 1.0
+        s[q] = 1
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,2]
-        s[q] = -1.0
+        s[q] = -1
         q = q[end]+[1:Nx*Ntheta;]
         ii[q] = G[i,j,k]
         jj[q] = G[i,j,2]
-        s[q] = -1.0
-        BCRHS[G[i,j,k]] = 0.0
+        s[q] = -1
+        BCRHS[G[i,j,k]] = 0
     end
 
     # Build the sparse matrix of the boundary conditions
@@ -1138,7 +1137,8 @@ end
 """
 !!! INTERNAL !!!
 
-Assigns values to ghost cells
+Assigns values to ghost cells. Is used to create cell variable satisfying
+boundary conditions
 """
 cellBoundary!{T<:Real}(phi :: CellValue{T}, bc :: BoundaryCondition{T}) =
     cellBoundary!(bc.domain.meshtype, phi, bc)
@@ -1180,7 +1180,7 @@ end
 
 # =========================== 2D Cartesian ================================
 function cellBoundary2D!{T<:Real}(phi::CellValue{T}, BC::BoundaryCondition{T})
-    Nx, Ny = tuple(BC.domain.dims...)
+    Nx, Ny = BC.domain.dims
     G=reshape([1:(Nx+2)*(Ny+2);], Nx+2, Ny+2)
     dx_1 = BC.domain.cellsize.x[1]
     dx_end = BC.domain.cellsize.x[end]
@@ -1251,9 +1251,9 @@ function cellBoundary2D!{T<:Real}(phi::CellValue{T}, BC::BoundaryCondition{T})
 end
 
 # ======================================== Cell Boundary 3D ===================================
-function cellBoundary3D!(phi::CellValue, BC::BoundaryCondition)
+function cellBoundary3D!{T<:Real}(phi::CellValue{T}, BC::BoundaryCondition{T})
 # extract data from the mesh structure
-Nx, Ny, Nz = tuple(BC.domain.dims...)
+Nx, Ny, Nz = BC.domain.dims
 G=reshape([1:(Nx+2)*(Ny+2)*(Nz+2);], Nx+2, Ny+2, Nz+2)
 dx_1 = BC.domain.cellsize.x[1]
 dx_end = BC.domain.cellsize.x[end]
@@ -1263,7 +1263,7 @@ dz_1 = BC.domain.cellsize.z[1]
 dz_end = BC.domain.cellsize.z[end]
 
 # define the output matrix
-phiBC = zeros(Nx+2, Ny+2, Nz+2)
+phiBC = zeros(T, Nx+2, Ny+2, Nz+2)
 phiBC[:] = phi.value[:]
 
 # Assign values to the boundary values
@@ -1350,171 +1350,179 @@ end
 
 
 # ===================================== Cell Boundary Radial 2D ===========================
-function cellBoundaryRadial2D!(phi::CellValue, BC::BoundaryCondition)
-# extract data from the mesh structure
-Nr, Ntheta = tuple(BC.domain.dims...)
-G=reshape([1:(Nr+2)*(Ntheta+2);], Nr+2, Ntheta+2)
-dr_1 = BC.domain.cellsize.x[1]
-dr_end = BC.domain.cellsize.x[end]
-dtheta_1 = BC.domain.cellsize.y[1]
-dtheta_end = BC.domain.cellsize.y[end]
-rp = BC.domain.cellcenters.x
+function cellBoundaryRadial2D!{T<:Real}(phi::CellValue{T}, BC::BoundaryCondition{T})
+    # extract data from the mesh structure
+    Nr, Ntheta = BC.domain.dims
+    G=reshape([1:(Nr+2)*(Ntheta+2);], Nr+2, Ntheta+2)
+    dr_1 = BC.domain.cellsize.x[1]
+    dr_end = BC.domain.cellsize.x[end]
+    dtheta_1 = BC.domain.cellsize.y[1]
+    dtheta_end = BC.domain.cellsize.y[end]
+    rp = BC.domain.cellcenters.x
 
-# define the output matrix
-phiBC = zeros(Nr+2, Ntheta+2)
-phiBC[:] = phi.value[:]
+    # define the output matrix
+    phiBC = zeros(T,Nr+2, Ntheta+2)
+    phiBC[:] = phi.value[:]
 
-# Assign values to the boundary values
-if !BC.top.periodic && !BC.bottom.periodic
-    # top boundary
-    j=Ntheta+2
-    for i = 2:Nr+1
-      phiBC[i,j]= (BC.top.c[i-1]-phi.value[i,end-1].*(-BC.top.a[i-1]/(dtheta_end*rp[i-1])+BC.top.b[i-1]/2.0))/(BC.top.a[i-1]/(dtheta_end*rp[i-1])+BC.top.b[i-1]/2.0)
-    end
-    # Bottom boundary
-    j=1;
-    for i = 2:Nr+1
-      phiBC[i,j]= (BC.bottom.c[i-1]-phi.value[i,2].*(BC.bottom.a[i-1]/(dtheta_1*rp[i-1])+BC.bottom.b[i-1]/2.0))/(-BC.bottom.a[i-1]/(dtheta_1*rp[i-1])+BC.bottom.b[i-1]/2.0)
-    end
-else
-    # top boundary
-    j=Ntheta+2
-    for i = 2:Nr+1
-      phiBC[i,j]= phi.value[i,2]
-    end
-    # Bottom boundary
-    j=1
-    for i = 2:Nr+1
-      phiBC[i,j]= phi.value[i,end-1]
-    end
-end
-
-if !BC.left.periodic && !BC.right.periodic
-    # Right boundary
-    i = Nr+2
-    for j = 2:Ntheta+1
-      phiBC[i,j]= (BC.right.c[j-1]-phi.value[end-1,j]*(-BC.right.a[j-1]/dr_end+BC.right.b[j-1]/2.0))/(BC.right.a[j-1]/dr_end+BC.right.b[j-1]/2.0)
+    # Assign values to the boundary values
+    if !BC.top.periodic && !BC.bottom.periodic
+        # top boundary
+        j=Ntheta+2
+        for i = 2:Nr+1
+          phiBC[i,j]=
+            (BC.top.c[i-1]-phi.value[i,end-1].*(-BC.top.a[i-1]/(dtheta_end*rp[i-1])+BC.top.b[i-1]/2.0))/
+                (BC.top.a[i-1]/(dtheta_end*rp[i-1])+BC.top.b[i-1]/2.0)
+        end
+        # Bottom boundary
+        j=1;
+        for i = 2:Nr+1
+          phiBC[i,j]=
+            (BC.bottom.c[i-1]-phi.value[i,2].*(BC.bottom.a[i-1]/(dtheta_1*rp[i-1])+BC.bottom.b[i-1]/2.0))/
+                (-BC.bottom.a[i-1]/(dtheta_1*rp[i-1])+BC.bottom.b[i-1]/2.0)
+        end
+    else
+        # top boundary
+        j=Ntheta+2
+        for i = 2:Nr+1
+          phiBC[i,j]= phi.value[i,2]
+        end
+        # Bottom boundary
+        j=1
+        for i = 2:Nr+1
+          phiBC[i,j]= phi.value[i,end-1]
+        end
     end
 
-    # Left boundary
-    i = 1
-    for j = 2:Ntheta+1
-      phiBC[i,j]= (BC.left.c[j-1]-phi.value[2,j]*(BC.left.a[j-1]/dr_1+BC.left.b[j-1]/2.0))/(-BC.left.a[j-1]/dr_1+BC.left.b[j-1]/2.0)
+    if !BC.left.periodic && !BC.right.periodic
+        # Right boundary
+        i = Nr+2
+        for j = 2:Ntheta+1
+          phiBC[i,j]=
+            (BC.right.c[j-1]-phi.value[end-1,j]*(-BC.right.a[j-1]/dr_end+BC.right.b[j-1]/2.0))/
+                (BC.right.a[j-1]/dr_end+BC.right.b[j-1]/2.0)
+        end
+
+        # Left boundary
+        i = 1
+        for j = 2:Ntheta+1
+          phiBC[i,j]=
+            (BC.left.c[j-1]-phi.value[2,j]*(BC.left.a[j-1]/dr_1+BC.left.b[j-1]/2.0))/
+                (-BC.left.a[j-1]/dr_1+BC.left.b[j-1]/2.0)
+        end
+    else
+        # Right boundary
+        i = Nr+2
+        for j = 2:Ntheta+1
+          phiBC[i,j]= phi.value[2,j]
+        end
+        # Left boundary
+        i = 1
+        for j = 2:Ntheta+1
+          phiBC[i,j]= phi.value[end-1,j]
+        end
     end
-else
-    # Right boundary
-    i = Nr+2
-    for j = 2:Ntheta+1
-      phiBC[i,j]= phi.value[2,j]
-    end
-    # Left boundary
-    i = 1
-    for j = 2:Ntheta+1
-      phiBC[i,j]= phi.value[end-1,j]
-    end
-end
-phi.value[:] = phiBC[:]
-phi
+    phi.value[:] = phiBC[:]
+    phi
 end
 
 
 # ===================================== Cell Boundary Cylindrical 3D ===========================
-function cellBoundaryCylindrical3D!(phi::CellValue, BC::BoundaryCondition)
-# extract data from the mesh structure
-Nr, Ntheta, Nz = tuple(BC.domain.dims...)
-G=reshape([1:(Nr+2)*(Ntheta+2)*(Nz+2);], Nr+2, Ntheta+2, Nz+2)
-dr_1 = BC.domain.cellsize.x[1]
-dr_end = BC.domain.cellsize.x[end]
-dtheta_1 = BC.domain.cellsize.y[1]
-dtheta_end = BC.domain.cellsize.y[end]
-dz_1 = BC.domain.cellsize.z[1]
-dz_end = BC.domain.cellsize.z[end]
-#rp = zeros(Nx,1,Nz)
-#rp[:,1,:] = repmat(phi.domain.cellcenters.x, 1, Nz)
-rp = phi.domain.cellcenters.x
+function cellBoundaryCylindrical3D!{T<:Real}(phi::CellValue{T}, BC::BoundaryCondition{T})
+    # extract data from the mesh structure
+    Nr, Ntheta, Nz = tuple(BC.domain.dims...)
+    G=reshape([1:(Nr+2)*(Ntheta+2)*(Nz+2);], Nr+2, Ntheta+2, Nz+2)
+    dr_1 = BC.domain.cellsize.x[1]
+    dr_end = BC.domain.cellsize.x[end]
+    dtheta_1 = BC.domain.cellsize.y[1]
+    dtheta_end = BC.domain.cellsize.y[end]
+    dz_1 = BC.domain.cellsize.z[1]
+    dz_end = BC.domain.cellsize.z[end]
+    #rp = zeros(Nx,1,Nz)
+    #rp[:,1,:] = repmat(phi.domain.cellcenters.x, 1, Nz)
+    rp = phi.domain.cellcenters.x
 
-# define the output matrix
-phiBC = zeros(Nr+2, Ntheta+2, Nz+2)
-phiBC[:] = phi.value[:]
+    # define the output matrix
+    phiBC = zeros(Nr+2, Ntheta+2, Nz+2)
+    phiBC[:] = phi.value[:]
 
-# Assign values to the boundary values
-if !BC.top.periodic && !BC.bottom.periodic
-    # top boundary
-    j=Ntheta+2
-    i = 2:Nr+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= (BC.top.c-(phi.value[i,end-1:end-1,k]).*(-BC.top.a./(dtheta_end*rp)+BC.top.b/2.0))./(BC.top.a./(dtheta_end*rp)+BC.top.b/2.0)
+    # Assign values to the boundary values
+    if !BC.top.periodic && !BC.bottom.periodic
+        # top boundary
+        j=Ntheta+2
+        i = 2:Nr+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= (BC.top.c-(phi.value[i,end-1:end-1,k]).*(-BC.top.a./(dtheta_end*rp)+BC.top.b/2.0))./(BC.top.a./(dtheta_end*rp)+BC.top.b/2.0)
 
-    # Bottom boundary
-    j=1
-    i = 2:Nr+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= (BC.bottom.c-(phi.value[i,2:2,k]).*(BC.bottom.a./(dtheta_1*rp)+BC.bottom.b/2.0))./(-BC.bottom.a./(dtheta_1*rp)+BC.bottom.b/2.0)
-else
-    # top boundary
-    j=Ntheta+2
-    i = 2:Nr+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= phi.value[i,2,k]
+        # Bottom boundary
+        j=1
+        i = 2:Nr+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= (BC.bottom.c-(phi.value[i,2:2,k]).*(BC.bottom.a./(dtheta_1*rp)+BC.bottom.b/2.0))./(-BC.bottom.a./(dtheta_1*rp)+BC.bottom.b/2.0)
+    else
+        # top boundary
+        j=Ntheta+2
+        i = 2:Nr+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= phi.value[i,2,k]
 
-    # Bottom boundary
-    j=1
-    i = 2:Nr+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= phi.value[i,end-1,k]
-end
+        # Bottom boundary
+        j=1
+        i = 2:Nr+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= phi.value[i,end-1,k]
+    end
 
-if !BC.left.periodic && !BC.right.periodic
-    # Right boundary
-    i = Nr+2
-    j = 2:Ntheta+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= (BC.right.c-(phi.value[end-1:end-1,j,k]).*(-BC.right.a/dr_end+BC.right.b/2.0))./(BC.right.a/dr_end+BC.right.b/2.0)
+    if !BC.left.periodic && !BC.right.periodic
+        # Right boundary
+        i = Nr+2
+        j = 2:Ntheta+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= (BC.right.c-(phi.value[end-1:end-1,j,k]).*(-BC.right.a/dr_end+BC.right.b/2.0))./(BC.right.a/dr_end+BC.right.b/2.0)
 
-    # Left boundary
-    i = 1;
-    j = 2:Ntheta+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= (BC.left.c-(phi.value[2:2,j,k]).*(BC.left.a/dr_1+BC.left.b/2.0))./(-BC.left.a/dr_1+BC.left.b/2.0)
-else
-    # Right boundary
-    i = Nr+2
-    j = 2:Ntheta+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= phi.value[2,j,k]
+        # Left boundary
+        i = 1;
+        j = 2:Ntheta+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= (BC.left.c-(phi.value[2:2,j,k]).*(BC.left.a/dr_1+BC.left.b/2.0))./(-BC.left.a/dr_1+BC.left.b/2.0)
+    else
+        # Right boundary
+        i = Nr+2
+        j = 2:Ntheta+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= phi.value[2,j,k]
 
-    # Left boundary
-    i = 1
-    j = 2:Ntheta+1
-    k = 2:Nz+1
-    phiBC[i,j,k]= phi.value[end-1,j,k]
-end
+        # Left boundary
+        i = 1
+        j = 2:Ntheta+1
+        k = 2:Nz+1
+        phiBC[i,j,k]= phi.value[end-1,j,k]
+    end
 
-if !BC.bottom.periodic && !BC.top.periodic
-    # front boundary
-    i = 2:Nr+1
-    j = 2:Ntheta+1
-    k = Nz+2
-    phiBC[i,j,k]= (BC.front.c-(phi.value[i,j,end-1:end-1]).*(-BC.front.a/dz_end+BC.front.b/2.0))./(BC.front.a/dz_end+BC.front.b/2.0)
+    if !BC.bottom.periodic && !BC.top.periodic
+        # front boundary
+        i = 2:Nr+1
+        j = 2:Ntheta+1
+        k = Nz+2
+        phiBC[i,j,k]= (BC.front.c-(phi.value[i,j,end-1:end-1]).*(-BC.front.a/dz_end+BC.front.b/2.0))./(BC.front.a/dz_end+BC.front.b/2.0)
 
-    # back boundary
-    i = 2:Nr+1
-    j = 2:Ntheta+1
-    k = 1
-    phiBC[i,j,k]= (BC.back.c-(phi.value[i,j,2:2]).*(BC.back.a/dz_1+BC.back.b/2.0))./(-BC.back.a/dz_1+BC.back.b/2.0)
-else
-    # front boundary
-    i = 2:Nr+1
-    j = 2:Ntheta+1
-    k = Nz+2
-    phiBC[i,j,k]= phi.value[i,j,2]
+        # back boundary
+        i = 2:Nr+1
+        j = 2:Ntheta+1
+        k = 1
+        phiBC[i,j,k]= (BC.back.c-(phi.value[i,j,2:2]).*(BC.back.a/dz_1+BC.back.b/2.0))./(-BC.back.a/dz_1+BC.back.b/2.0)
+    else
+        # front boundary
+        i = 2:Nr+1
+        j = 2:Ntheta+1
+        k = Nz+2
+        phiBC[i,j,k]= phi.value[i,j,2]
 
-    # back boundary
-    i = 2:Nr+1
-    j = 2:Ntheta+1
-    k = 1
-    phiBC[i,j,k]= phi.value[j,j,end-1]
-end
-phi.value[:] = phiBC[:]
-phi
+        # back boundary
+        i = 2:Nr+1
+        j = 2:Ntheta+1
+        k = 1
+        phiBC[i,j,k]= phi.value[j,j,end-1]
+    end
+    phi.value[:] = phiBC[:]
+    phi
 end

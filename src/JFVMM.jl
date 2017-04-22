@@ -20,19 +20,19 @@ export MeshStructure, BoundaryCondition, CellValue, FaceValue, CellVector,
 # visualizeCellVectors
 # visualizeCells
 
-include("jfvmm_1types.jl")
-include("jfvmm_2meshstructure.jl")
-include("jfvmm_3boundarycondition.jl")
-include("jfvmm_4domain_variables.jl")
-include("jfvmm_5diffusion_terms.jl")
-include("transientTerms.jl")
-include("domainOperators.jl")
-include("convectionTerms.jl")
-include("averagingTerms.jl")
-include("calculusTerms.jl")
-include("sourceTerms.jl")
-include("solveVisualizePDE.jl")
-include("JFVMtools.jl")
-include("jfvm_test.jl")
+include("jfvmm_01_types.jl")
+include("jfvmm_02_mesh_structure.jl")
+include("jfvmm_03_boundary_condition.jl")
+include("jfvmm_04_domain_variables.jl")
+include("jfvmm_05_diffusion_terms.jl")
+include("jfvmm_06_transient_terms.jl")
+include("jfvmm_07_domain_operators.jl")
+include("jfvmm_08_convection_terms.jl")
+include("jfvmm_09_averaging_terms.jl")
+include("jfvmm_10_calculus_terms.jl")
+include("jfvmm_11_source_terms.jl")
+include("jfvmm_12_solve_pde.jl")
+include("jfvmm_13_tools.jl")
+# include("jfvm_test.jl")
 
 end # module
