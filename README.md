@@ -1,8 +1,38 @@
 # JFVMM(odified)
 
-[![Build Status](https://travis-ci.org/simulkade/JFVM.jl.svg?branch=master)](https://travis-ci.org/simulkade/JFVM.jl)
+## New README under construction
 
-## A simple finite volume tool written in Julia
+### Finite volume method
+
+JFVMM implements finite volume method for structured meshes. While structured
+meshes are more limiting, the implementation of the method is (a) simpler and
+(b) more efficient. Available geometries:
+- 1D linear
+- 1D polar with angular symmetry.
+- 2D planar on the rectangle
+- 2D polar on the disk segment.
+- 2D cylindrical: cylindrical domain with angular symmetry
+- 3D on rectangular block
+- 3D cylindrical on the segment of the cylinder
+
+### What's modified?
+
+Original JFVM, which is awesome otherwise, is essentially a port from MATLAB
+code, which lacks Julia's character. JFVMM tries to re-build it in a more
+Julia-like manner.
+
+### What is done and what still needs to be done
+- MOSTLY DONE: document exported functions
+- MOSTLY DONE: make the code generic over real type. This is mostly done, except
+for TVD
+- Factor the code: there are large bits of code that are repeated and need to
+be factored out.
+- The code allocates lots of arrays as it computes terms and solves equations:
+this is the main area for optimization
+
+## Bits of old README
+
+### A simple finite volume tool written in Julia
 This code is a Matlabesque implementation of my Matlab finite volume tool. The code is not in its most beautiful form, but it works if you believe my words. Please remember that the code is written by a chemical/petroleum engineer. Petroleum engineers are known for being simple-minded folks and chemical engineers have only one rule: "any answer is better than no answer". You can expect to easily discretize a linear transient convection-diffusion PDE into the matrix of coefficients and RHS vectors. Domain shape is limited to rectangles, circles (or a section of a circle), cylinders, and soon spheres. The mesh can be uniform or nonuniform:
   - Cartesian (1D, 2D, 3D)
   - Cylindrical (1D, 2D, 3D)
@@ -16,40 +46,12 @@ You can have the following boundary conditions or a combination of them on each 
 
 It is relatively easy to use the code to solve a system of coupled linear PDE's and not too difficult to solve nonlinear PDE's.
 
-## Installation
-You need to have [matplotlib](http://matplotlib.org/) and [mayavi](http://code.enthought.com/projects/mayavi/) installed. 
-### Linux
-In Ubuntu-based systems, try
-```
-sudo apt-get install python-matplotlib mayavi2
-```
-Then install `JFVM` by the following commands. The second line pulls the latest (and recommended) version of `JFVM`:
-```
-Pkg.add("JFVM")
-Pkg.checkout("JFVM")
-```
-
-### Windows
-There are a few issues with 3D visualization in windows right now. This is the workflow if you want to give it a try:
-  - Download and install [Anaconda](http://continuum.io/downloads)
-  - Run `anaconda command prompt` (as administrator) and install `mayavi` and `wxpython`:
-    * `conda install mayavi`
-    * `conda install wxpython` (Not necessary if you clone the latest version of JFVM)
-  - Install [github for windows](https://windows.github.com/)
-  - open `Julia` and type 
-  ```
-  Pkg.add("JFVM")
-  Pkg.checkout("JFVM")
-  ```
-
-Please let me know if it does not work on your windows machines.
-
-## Tutorial
+### Tutorial
 I have written a short [tutorial](http://nbviewer.ipython.org/github/simulkade/JFVM.jl/blob/master/examples/jfvm_tutorial.ipynb), which will be extended gradually.
 
-## In action
+### In action
 Copy and paste the following code to solve a transient diffusion equation:
-```jl
+```julia
 using JFVM
 Nx = 10
 Lx = 1.0
@@ -80,7 +82,7 @@ end
 
 Now change the 4th line to `m=createMesh2D(Nx,2*Nx, Lx,2*Lx)` and see what happens.
 
-# IJulia notebooks
+### IJulia notebooks
   - [Introduction](http://nbviewer.ipython.org/github/simulkade/JFVM.jl/blob/master/examples/jfvm-a-finite-volume-tool-for-julia.ipynb)
   - [tutorial](http://nbviewer.ipython.org/github/simulkade/JFVM.jl/blob/master/examples/jfvm_tutorial.ipynb)
   - [compare analytical solution of a diffusion equation with uniform and nonuniform grids](http://nbviewer.ipython.org/github/simulkade/JFVM.jl/blob/master/examples/jfvm_diffusion_analytics.ipynb)
