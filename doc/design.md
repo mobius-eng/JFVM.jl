@@ -1,0 +1,3 @@
+# JFVMM: overhaul; design principles
+
+## 

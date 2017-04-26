@@ -1,132 +1,149 @@
-"""
-Stores cell (centres) locations
-"""
-immutable CellLocation{T<:Real}
-  x::Array{T,1}
-  y::Array{T,1}
-  z::Array{T,1}
+# %% These definitions are just for readability in the future
+
+type Point{T<:Real}
+    x :: T
+    y :: T
+    z :: T
 end
 
-CellLocation{T<:Real}(x :: Array{T,1}) = CellLocation(x, zeros(T,1), zeros(T,1))
-CellLocation{T<:Real}(x:: Array{T,1}, y:: Array{T,1}) = CellLocation(x, y, zeros(T,1))
+Point{T<:Real}(x::T, y::T) = Point(x,y, zero(T))
+Point{T<:Real}(::Type{T}) = Point(zero(T), zero(T), zero(T))
+Point{T<:Real}(x :: Vector{T}, y :: Vector{T}, z :: Vector{T}) = map(Point, x, y, z)
+Point{T<:Real}(x :: Vector{T}, y :: Vector{T}) = map(Point, x, y)
 
-"""
-Stores the size of each cell in each direction
-"""
-immutable CellSize{T<:Real}
-  x::Array{T,1}
-  y::Array{T,1}
-  z::Array{T,1}
+function Base.broadcast{T<:Real}(f, p :: Point{T})
+    Point(f(p.x), f(p.y), f(p.z))
 end
 
-CellSize{T<:Real}(x :: Array{T,1}) = CellSize(x, zeros(T,1), zeros(T,1))
-CellSize{T<:Real}(x :: Array{T,1}, y :: Array{T,1}) = CellSize(x, y, zeros(T,1))
-
-# TODO: check what exactly is meant by the face location
-"""
-Stores face locations
-"""
-immutable FaceLocation{T<:Real}
-  x::Array{T,1}
-  y::Array{T,1}
-  z::Array{T,1}
+function Base.broadcast{T<:Real}(f, p1 :: Point{T}, p2 :: Point{T})
+    Point(f(p1.x, p2.x), f(p1.y, p2.y), f(p1.z, p2.z))
 end
 
-FaceLocation{T<:Real}(x::Array{T,1}) = FaceLocation(x, zeros(T,1), zeros(T,1))
-FaceLocation{T<:Real}(x::Array{T,1}, y::Array{T,1}) = FaceLocation(x, y, zeros(T,1))
+function Base.broadcast{T<:Real}(f, x :: T, p :: Point{T})
+    Point(f(x,p.x), f(x,p.y), f(x,p.z))
+end
 
-"""
-Abstract type shared among all meshes
-"""
-abstract MeshType
+function Base.broadcast{T<:Real}(f, p :: Point{T}, x :: T)
+    Point(f(p.x,x), f(p.y,x), f(p.z,x))
+end
 
-"""
-Cartesian 1D mesh
-"""
-immutable Mesh1D <: MeshType end
 
-const mesh1D = Mesh1D()
+Base.norm(p :: Point) = norm([p.x, p.y, p.z])
 
-"""
-Polar 1D mesh (symmetrical in angular direction)
-"""
-immutable Mesh1DPolar <: MeshType end
+function Base.cross{T<:Real}(p :: Point{T}, q :: Point{T})
+    c = [p.x, p.y, p.z] × [q.x, q.y, q.z]
+    Point(c...)
+end
 
-const mesh1DPolar = Mesh1DPolar()
+function Base.dot{T<:Real}(p :: Point{T}, q :: Point{T})
+    p.x*q.x + p.y*q.y + p.z*q.z
+end
 
-"""
-Cartesian 2D mesh
-"""
-immutable Mesh2D <: MeshType end
+function +{T<:Real}(p :: Point{T}, q :: Point{T})
+    Point(p.x+q.x, p.y+q.y, p.z+q.z)
+end
 
-const mesh2D = Mesh2D()
+function -{T<:Real}(p :: Point{T}, q :: Point{T})
+    Point(p.x-q.x, p.y-q.y, p.z-q.z)
+end
 
-"""
-Cyllindrical 2D mesh (symmetrical in angular dimension)
-"""
-immutable Mesh2DCylindrical <: MeshType end
+function /{T<:Real}(p :: Point{T}, f :: Real)
+    Point(p.x/f, p.y/f, p.z/f)
+end
 
-const mesh2DCylindrical = Mesh2DCylindrical()
+function *{T<:Real}(f :: Real, p :: Point{T})
+    Point(f*p.x, f*p.y, f*p.z)
+end
 
-"""
-Polar 2D mesh
-"""
-immutable Mesh2DPolar <: MeshType end
+function Base.isapprox{T<:Real}(p :: Point{T}, q :: Point{T}; kwargs...)
+    isapprox(p.x, q.x; kwargs...) && isapprox(p.y, q.y; kwargs...) && isapprox(p.z, q.z; kwargs...)
+end
 
-const mesh2DPolar = Mesh2DPolar()
+type Cells{T<:Real}
+    volumes :: Array{T, 3}
+    centroids :: Array{Point{T},3}
+end
 
-"""
-Cartesian 3D mesh
-"""
-immutable Mesh3D <: MeshType end
+function Cells{T<:Real}(::Type{T}, Nx :: Int64, Ny :: Int64, Nz :: Int64 = 1)
+    volumes = zeros(T, Nx, Ny, Nz)
+    c = [Point(T) for i in 1:Nx, j in 1:Ny, k in 1:Nz]
+    Cells(volumes, c)
+end
 
-const mesh3D = Mesh3D()
+type Face{T<:Real}
+    area :: T
+    normal :: Point{T}
+    loc :: Point{T}
+end
 
-"""
-Cyllindrical 3D mesh
-"""
-immutable Mesh3DCylindrical <: MeshType end
+function createFace{T<:Real}(a :: Point{T}, b :: Point{T}, nd :: Point{T})
+    loc = (a+b) ./ (2one(T))
+    p = a - b
+    area = norm(a - b)
+    n = (Point(p.y, -p.x) ./ area)
+    normal = n .* sign(n ⋅ nd)
+    Face(area, normal, loc)
+end
 
-const mesh3DCylindrical = Mesh3DCylindrical()
+function createFace{T<:Real}(a :: Point{T}, b :: Point{T}, c :: Point{T}, d ::Point{T}, nd :: Point)
+    c1 = centroid(d, a, b)
+    c2 = centroid(b, c, d)
+    a1 = parallelogramarea(b - a, d - a) / 2
+    a2 = parallelogramarea(b - c, d - c) / 2
+    area = a1 + a2
+    loc = (a1/area) .* c1 + (a2/area) .* c2
+    p = (b - a) × (d - a)
+    n = p ./ norm(p)
+    normal = n .* sign(n ⋅ nd)
+    Face(area, normal, loc)
+end
 
+type Faces{T<:Real}
+    ifaces :: Array{Face{T}}
+    jfaces :: Array{Face{T}}
+    kfaces :: Array{Face{T}}
+end
+
+function Faces{T<:Real}(::Type{T}, Ni, Nj, Nk=1)
+    ifaces = [Face(zero(T), Point(T), Point(T)) for i in 1:(Ni+1), j in 1:Nj, k in 1:Nk]
+    jfaces = [Face(zero(T), Point(T), Point(T)) for i in 1:Ni, j in 1:(Nj+1), k in 1:Nk]
+    kfaces = [Face(zero(T), Point(T), Point(T)) for i in 1:Ni, j in 1:Nj, k in 1:(Nk+1)]
+    Faces(ifaces, jfaces, kfaces)
+end
+
+# %% Mesh structure
 """
 Mesh structure
 
 Fields:
-
-    + meshtype: determines the type of the mesh
-    + dim: dimensions
+    + dim: vector dimensions for each index (length = N)
     + cellsize, cellcenters, facecenters: mesh particularities
-    + corner: array of indices indicating position of the corner
-    + edge: array of indices for the edges
-
 """
-immutable MeshStructure{T<:Real}
-  meshtype :: MeshType
-  dims :: Array{Int,1}
-  cellsize :: CellSize{T}
-  cellcenters :: CellLocation{T}
-  facecenters :: FaceLocation{T}
-  corner :: Array{Int,1}
-  edge :: Array{Int,1}
+type MeshStructure{T<:Real}
+    dims        :: Vector{Int64}
+    vertices    :: Array{Point{T}}
+    cells       :: Cells{T}
+    faces       :: Faces{T}
 end
+
+dimensions(m :: MeshStructure) = m.dims
+
+# %% Cell and Face values
 
 """
 Representation of the variable defined on the cell
 """
-immutable CellValue{T<:Real}
-  domain::MeshStructure{T}
-  value::Array{T}
+type CellValue{T1<:Real, T2}
+    domain :: MeshStructure{T1}
+    value  :: Array{T2}
 end
 
 """
 Representation of the vector variable defined on the cell
 """
-immutable CellVector{T<:Real}
-  domain::MeshStructure{T}
-  xvalue::Array{T}
-  yvalue::Array{T}
-  zvalue::Array{T}
+type CellVector{T<:Real}
+    domain :: MeshStructure{T}
+    vector :: Array{Point{T}}
 end
 
 """
@@ -135,38 +152,47 @@ Representation of the quantity on the face of the cell.
 Fields:
 
 - `domain` : the domain (mesh) on which the value is defined
-- `xvalue` : the values on the faces with normal (±1,0,0)
-- `yvalue` : the values on the faces with normal (0,±1,0)
-- `zvalue` : the values on the faces with norma (0,0,±1)
+- `value` : the values on the faces with normal (±1,0,0)
 """
-immutable FaceValue{T<:Real}
-    domain::MeshStructure{T}
-    xvalue::Array{T}
-    yvalue::Array{T}
-    zvalue::Array{T}
+type FaceValue{T<:Real, T2}
+    domain :: MeshStructure{T}
+    ivalue :: Array{T2}
+    jvalue :: Array{T2}
+    kvalue :: Array{T2}
 end
 
-"""
-Border value
+type FaceVector{T<:Real}
+    domain :: MeshStructure{T}
+    ivalue :: Array{Point{T}}
+    jvalue :: Array{Point{T}}
+    kvalue :: Array{Point{T}}
+end
 
-    a ∇φ + b φ = c
+# %% Boundary condition representation
 """
-type BorderValue{T<:Real}
-    a::Array{T}
-    b::Array{T}
-    c::Array{T}
-    periodic::Bool
+Border value: either flux or value
+- `isflux` contains the array of trues where flux is specified, otherwise -- falses
+- `value` array either values or flux ⋅ (area norm)
+"""
+type BorderValue{T}
+    isflux :: Array{Bool}
+    value :: Array{T}
 end
 
 """
 Boundary conditions
 """
-type BoundaryCondition{T<:Real}
+immutable BoundaryCondition{T<:Real}
     domain::MeshStructure{T}
-    left::BorderValue{T}
-    right::BorderValue{T}
-    bottom::BorderValue{T}
-    top::BorderValue{T}
-    back::BorderValue{T}
-    front::BorderValue{T}
+    left :: BorderValue{T}
+    right :: BorderValue{T}
+    bottom :: BorderValue{T}
+    top :: BorderValue{T}
+    back :: BorderValue{T}
+    front :: BorderValue{T}
+end
+
+function BoundaryCondition(;kwargs...)
+    d = Dict(kwargs)
+    BoundaryCondition(d[:domain], d[:left], d[:right], d[:bottom], d[:top], d[:back], d[:front])
 end
