@@ -1,7 +1,9 @@
 __precompile__()
 module JFVMM
 
-import Base: +, -, *, /
+include("Geometry.jl")
+include("MeshStructure.jl")
+
 # export MeshStructure, BoundaryCondition, CellValue, FaceValue, CellVector,
 #        arithmeticMean, geometricMean, harmonicMean, upwindMean, linearMean,
 #        tvdMean, createBC, boundaryConditionTerm, cellBoundary, solvePDE,
@@ -20,10 +22,10 @@ import Base: +, -, *, /
 # visualizeCellVectors
 # visualizeCells
 
-include("jfvmm_01_types.jl")
-include("jfvmm_02_domain_variables.jl")
-include("jfvmm_03_mesh_structure.jl")
-include("jfvmm_04_boundary_condition.jl")
+# include("jfvmm_01_types.jl")
+# include("jfvmm_02_domain_variables.jl")
+# include("jfvmm_03_mesh_structure.jl")
+# include("jfvmm_04_boundary_condition.jl")
 # include("jfvmm_05_diffusion_terms.jl")
 # include("jfvmm_06_transient_terms.jl")
 # include("jfvmm_07_domain_operators.jl")
