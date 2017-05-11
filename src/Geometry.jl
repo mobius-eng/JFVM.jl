@@ -1,123 +1,61 @@
 __precompile__()
 module Geometry
 
-import Base: +, -, *, /
+using StaticArrays
 
-export Point. tetrahedronVolume, triangleArea, tetrahedronCentroid, triangleCentroid, pyramidVolumeCentroid
+export Point2D, triangleArea, triangleCentroid
 
-# %% Point: point in 3D space
+# %% Point: point in 2D space
 
 """
-Point in 3D space
+Point in 2D space
 
 Constructor
 
 ```julia
-Point(x, y, [z=0])
-Point(T)
+Point2D(x, y)
 ```
 
-where `x`, `y` and `z` are of some type `T<:Real`. `Point(T)` (e.g. `Point(Float64)`)
-constructs an origin point of type `T`.
+where `x` and `y` are `Float64` values, constructs a 2D point (or otherwise viewed as
+the vector from origin to this point).
 """
-immutable Point{T<:Real}
-    x :: T
-    y :: T
-    z :: T
+immutable Point2D <: FieldVector{Float64}
+    x :: Float64
+    y :: Float64
 end
 
-Point{T<:Real}(x::T, y::T) = Point(x,y, zero(T))
-Point{T<:Real}(::Type{T}) = Point(zero(T), zero(T), zero(T))
 """
+```julia
+Point2D(x,y)
 ```
-Point(x,y,z)
-```
-Construct an array of points given the array of `x`, `y` (and `z`) coordinates.
-If `z` coordinates are not provided, they are assumed to be zero.
+Construct an array of points given the array of `x`, `y` coordinates.
 """
-Point{T<:Real}(x :: AbstractArray{T}, y :: AbstractArray{T}, z :: AbstractArray{T}) = map(Point, x, y, z)
+Point2D{U <: Real, V <: Real}(x :: AbstractArray{U}, y :: AbstractArray{V}) = map(Point2D, x, y)
 
-Point{T<:Real}(x :: AbstractArray{T}, y :: AbstractArray{T}) = map(Point, x, y)
+StaticArrays.similar_type(::Type{Point2D}, t :: Type{Float64}, sz :: Size{(2,)}) = Point2D
 
-function Base.broadcast{T<:Real}(f, p :: Point{T})
-    Point(f(p.x), f(p.y), f(p.z))
+"""
+```julia
+cross( p :: Point2D, q :: Point2D)
+```
+Cross product of two 2D vectors is the (signed) area of the parallelegram constructed
+on these vectors
+"""
+Base.cross(p :: Point2D, q :: Point2D) = p.x*q.y - p.y*q.x
+
+"""
+Computes the area of the triangle defined by its vertices
+"""
+function triangleArea(a :: Point2D, b :: Point2D, c ::Point2D)
+    Sf = ((b - a) × (c - a)) / 2
+    abs(Sf)
 end
 
-function Base.broadcast{T1<:Real, T2<:Real}(f, p1 :: Point{T1}, p2 :: Point{T2})
-    Point(f(p1.x, p2.x), f(p1.y, p2.y), f(p1.z, p2.z))
-end
-
-function Base.broadcast{T1<:Real, T2}(f, x :: T2, p :: Point{T1})
-    Point(f(x,p.x), f(x,p.y), f(x,p.z))
-end
-
-function Base.broadcast{T1<:Real,T2}(f, p :: Point{T1}, x :: T2)
-    Point(f(p.x,x), f(p.y,x), f(p.z,x))
-end
-
-Base.norm(p :: Point) = norm([p.x, p.y, p.z])
-
-function Base.cross{T<:Real}(p :: Point{T}, q :: Point{T})
-    c = [p.x, p.y, p.z] × [q.x, q.y, q.z]
-    Point(c...)
-end
-
-function Base.dot{T<:Real}(p :: Point{T}, q :: Point{T})
-    p.x*q.x + p.y*q.y + p.z*q.z
-end
-
-function +{T<:Real}(p :: Point{T}, q :: Point{T})
-    Point(p.x+q.x, p.y+q.y, p.z+q.z)
-end
-
-function -{T<:Real}(p :: Point{T}, q :: Point{T})
-    Point(p.x-q.x, p.y-q.y, p.z-q.z)
-end
-
-function /{T<:Real}(p :: Point{T}, f :: Real)
-    Point(p.x/f, p.y/f, p.z/f)
-end
-
-function *{T<:Real}(f :: Real, p :: Point{T})
-    Point(f*p.x, f*p.y, f*p.z)
-end
-
-function Base.isapprox{T<:Real}(p :: Point{T}, q :: Point{T}; kwargs...)
-    isapprox(p.x, q.x; kwargs...) && isapprox(p.y, q.y; kwargs...) && isapprox(p.z, q.z; kwargs...)
-end
-
-function tetrahedronVolume{T<:Real}(a :: Point{T}, b :: Point{T}, c :: Point{T}, d :: Point{T})
-    p = b - a
-    q = c - a
-    r = d - a
-    abs(p.x*(q.y*r.z-q.z*r.y) - p.y*(q.x*r.z-q.z*r.x) + p.z*(q.x*r.y-q.y*r.x)) / 6
-end
-
-function pyramidVolumeCentroid{T<:Real}(a :: Point{T}, b, c, d, p)
-    # Tetrahedron abcp
-    v1 = tetrahedronVolume(a,b,c,p)
-    c1 = tetrahedronCentroid(a,b,c,p)
-    # Tetrahedron acdp
-    v2 = tetrahedronVolume(a,c,d,p)
-    c2 = tetrahedronCentroid(a,c,d,p)
-    # Comdine
-    v = v1 + v2
-    (v, (v1/v)*c1 + (v2/v)*c2)
-
-end
-
-function tetrahedronCentroid{T<:Real}(a :: Point{T}, b :: Point{T}, c :: Point{T}, d :: Point{T})
-    (a+b+c+d) / (4one(T))
-end
-
-function triangleArea(a :: Point{T}, b :: Point{T}, c ::Point{T})
-    Sf = (b - a) × (c - a)
-    area = norm(Sf)
-    (area, Sf)
-end
-
-function triangleCentroid(a :: Point{T}, b :: Point{T}, c ::Point{T})
-    (a+b+c) / (3one(T))
+"""
+Computes the centroid of the triangle defined by its vertices
+"""
+function triangleCentroid(a :: Point2D, b :: Point2D, c ::Point2D)
+    (a+b+c) / 3
 end
 
 end

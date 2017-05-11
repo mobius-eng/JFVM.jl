@@ -3,6 +3,13 @@ module JFVMM
 
 include("Geometry.jl")
 include("MeshStructure.jl")
+include("BoundaryConditions.jl")
+include("Fields.jl")
+
+using JFVMM.Geometry
+using JFVMM.MeshStructure
+using JFVMM.BoundaryConditions
+using JFVMM.Fields
 
 # export MeshStructure, BoundaryCondition, CellValue, FaceValue, CellVector,
 #        arithmeticMean, geometricMean, harmonicMean, upwindMean, linearMean,
